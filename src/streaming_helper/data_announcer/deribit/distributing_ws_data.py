@@ -8,11 +8,11 @@ from loguru import logger as log
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-from ws_streamer.db_management import redis_client, sqlite_management as db_mgt
-from ws_streamer.messaging import telegram_bot as tlgrm
-from ws_streamer.restful_api.deribit import api_requests
-from ws_streamer.data_announcer.deribit import get_instrument_summary, allocating_ohlc
-from ws_streamer.utilities import caching, pickling, string_modification as str_mod, system_tools
+from streaming_helper.db_management import redis_client, sqlite_management as db_mgt
+from streaming_helper.messaging import telegram_bot as tlgrm
+from streaming_helper.restful_api.deribit import api_requests
+from streaming_helper.data_announcer.deribit import get_instrument_summary, allocating_ohlc
+from streaming_helper.utilities import caching, pickling, string_modification as str_mod, system_tools
 
 
 async def caching_distributing_data(

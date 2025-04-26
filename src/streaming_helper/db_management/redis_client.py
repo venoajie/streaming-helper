@@ -12,7 +12,7 @@ import redis.asyncio as aioredis
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-from ws_streamer.utilities import system_tools
+from streaming_helper.utilities import system_tools
 
 
 class RedisPubSubManager:

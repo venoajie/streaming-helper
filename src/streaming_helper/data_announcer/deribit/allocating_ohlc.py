@@ -6,17 +6,17 @@
 import asyncio
 import orjson
 
-from ws_streamer.db_management.redis_client import publishing_result
-from ws_streamer.db_management.sqlite_management import (
+from streaming_helper.db_management.redis_client import publishing_result
+from streaming_helper.db_management.sqlite_management import (
     executing_query_with_return,
     insert_tables,
     querying_arithmetic_operator,
     update_status_data,
 )
-from ws_streamer.messaging.telegram_bot import telegram_bot_sendtext
-from ws_streamer.restful_api.deribit.api_requests import get_ohlc_data
-from ws_streamer.utilities.string_modification import remove_apostrophes_from_json
-from ws_streamer.utilities.system_tools import parse_error_message
+from streaming_helper.messaging.telegram_bot import telegram_bot_sendtext
+from streaming_helper.restful_api.deribit.api_requests import get_ohlc_data
+from streaming_helper.utilities.string_modification import remove_apostrophes_from_json
+from streaming_helper.utilities.system_tools import parse_error_message
 from loguru import logger as log
 
 

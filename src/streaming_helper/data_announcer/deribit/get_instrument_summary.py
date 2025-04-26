@@ -5,10 +5,10 @@ import asyncio
 
 
 # user defined formula
-from ws_streamer.restful_api.deribit.api_requests import get_instruments
-from ws_streamer.utilities.pickling import read_data
-from ws_streamer.utilities.string_modification import remove_double_brackets_in_list
-from ws_streamer.utilities.system_tools import provide_path_for_file
+from streaming_helper.restful_api.deribit.api_requests import get_instruments
+from streaming_helper.utilities.pickling import read_data
+from streaming_helper.utilities.string_modification import remove_double_brackets_in_list
+from streaming_helper.utilities.system_tools import provide_path_for_file
 
 
 def get_instruments_kind(

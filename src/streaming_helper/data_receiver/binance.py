@@ -22,9 +22,9 @@ sys.path.append(this_folder)
 # -----------------------------------------------------------------------------
 
 # user defined formula
-from ws_streamer.configuration import config
-from ws_streamer.messaging.telegram_bot import telegram_bot_sendtext
-from ws_streamer.utilities import system_tools
+from streaming_helper.configuration import config
+from streaming_helper.messaging.telegram_bot import telegram_bot_sendtext
+from streaming_helper.utilities import system_tools
 
 
 def parse_dotenv(sub_account: str) -> dict:

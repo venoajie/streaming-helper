@@ -2,9 +2,9 @@
 
 import asyncio
 
-from ws_streamer.restful_api.deribit.api_requests import get_tickers
-from ws_streamer.utilities.pickling import read_data
-from ws_streamer.utilities.system_tools import (
+from streaming_helper.restful_api.deribit.api_requests import get_tickers
+from streaming_helper.utilities.pickling import read_data
+from streaming_helper.utilities.system_tools import (
     provide_path_for_file,
 )
 

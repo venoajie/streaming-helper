@@ -268,7 +268,7 @@ async def parse_error_message_with_redis(
 
     """
     
-    from ws_streamer.utilities import string_modification as str_mod
+    from streaming_helper.utilities import string_modification as str_mod
 
     info = parse_error_message(error,
                                message,

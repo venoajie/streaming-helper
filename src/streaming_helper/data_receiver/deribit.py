@@ -14,10 +14,10 @@ from dataclassy import dataclass, fields
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 # user defined formula
-from ws_streamer.configuration import config, config_oci
-from ws_streamer.messaging.telegram_bot import telegram_bot_sendtext
-from ws_streamer.restful_api.deribit import api_requests
-from ws_streamer.utilities import string_modification as str_mod, system_tools
+from streaming_helper.configuration import config, config_oci
+from streaming_helper.messaging.telegram_bot import telegram_bot_sendtext
+from streaming_helper.restful_api.deribit import api_requests
+from streaming_helper.utilities import string_modification as str_mod, system_tools
 
 
 def parse_dotenv(sub_account: str) -> dict:

@@ -5,13 +5,13 @@ import asyncio
 from loguru import logger as log
 
 # user defined formulas
-from db_management import sqlite_management as db_mgt
-from messaging import telegram_bot as tlgrm
-from transaction_management.deribit import (
+from streaming_helper.db_management import sqlite_management as db_mgt
+from streaming_helper.messaging import telegram_bot as tlgrm
+from streaming_helper.restful_api.deribit import (
     api_requests,
     cancelling_active_orders,
 )
-from utilities import (
+from streaming_helper.utilities import (
     pickling,
     string_modification as str_mod,
     system_tools,

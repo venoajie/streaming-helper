@@ -24,8 +24,8 @@ from dataclassy import dataclass
 from loguru import logger as log
 
 # user defined formula
-from ws_streamer.messaging import telegram_bot as tlgrm
-from ws_streamer.utilities import string_modification as str_mod, time_modification as time_mod
+from streaming_helper.messaging import telegram_bot as tlgrm
+from streaming_helper.utilities import string_modification as str_mod, time_modification as time_mod
 
 
 async def get_connected(

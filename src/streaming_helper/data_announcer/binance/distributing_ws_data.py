@@ -3,9 +3,9 @@
 # built ins
 import asyncio
 
-from ws_streamer.db_management import redis_client
-from ws_streamer.messaging import telegram_bot as tlgrm
-from ws_streamer.utilities import string_modification as str_mod, system_tools
+from streaming_helper.db_management import redis_client
+from streaming_helper.messaging import telegram_bot as tlgrm
+from streaming_helper.utilities import string_modification as str_mod, system_tools
 
 
 async def caching_distributing_data(
