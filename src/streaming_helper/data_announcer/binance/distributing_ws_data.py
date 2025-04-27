@@ -13,7 +13,6 @@ async def caching_distributing_data(
     redis_channels: list,
     queue_general: object,
 ) -> None:
-
     """ """
 
     try:
@@ -44,9 +43,9 @@ async def caching_distributing_data(
                         pub_message = dict(
                             data=data,
                         )
-                        
+
                         if "abnormaltradingnotices" in message_channel:
-                            
+
                             data: dict = message_params["data"]
 
                             pub_message = dict(

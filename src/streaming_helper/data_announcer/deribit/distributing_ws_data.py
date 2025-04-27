@@ -11,8 +11,16 @@ asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 from streaming_helper.db_management import redis_client, sqlite_management as db_mgt
 from streaming_helper.messaging import telegram_bot as tlgrm
 from streaming_helper.restful_api.deribit import api_requests
-from streaming_helper.data_announcer.deribit import get_instrument_summary, allocating_ohlc
-from streaming_helper.utilities import caching, pickling, string_modification as str_mod, system_tools
+from streaming_helper.data_announcer.deribit import (
+    get_instrument_summary,
+    allocating_ohlc,
+)
+from streaming_helper.utilities import (
+    caching,
+    pickling,
+    string_modification as str_mod,
+    system_tools,
+)
 
 
 async def caching_distributing_data(
@@ -24,7 +32,6 @@ async def caching_distributing_data(
     strategy_attributes,
     queue_general: object,
 ) -> None:
-
     """
     my_trades_channel:
     + send messages that "high probabilities" trade DB has changed
@@ -356,7 +363,6 @@ async def trades_in_message_channel(
     orders_cached: list,
     result: dict,
 ) -> None:
-
     """
 
     #! result example
@@ -595,4 +601,3 @@ async def updating_sub_account(
         sub_account_cached_channel,
         message_byte_data,
     )
-

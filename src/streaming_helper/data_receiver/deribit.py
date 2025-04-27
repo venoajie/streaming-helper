@@ -14,14 +14,12 @@ from dataclassy import dataclass, fields
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 # user defined formula
-from streaming_helper.configuration import config, config_oci
 from streaming_helper.messaging.telegram_bot import telegram_bot_sendtext
-from streaming_helper.restful_api.deribit import api_requests
+from streaming_helper.restful_api.deribit import (
+    end_point_params_template,
+    end_point_template,
+)
 from streaming_helper.utilities import string_modification as str_mod, system_tools
-
-
-def parse_dotenv(sub_account: str) -> dict:
-    return config.main_dotenv(sub_account)
 
 
 @dataclass(unsafe_hash=True, slots=True)
@@ -29,8 +27,8 @@ class StreamingAccountData:
     """ """
 
     sub_account_id: str
-    client_id: str = fields
-    client_secret: str = fields
+    client_id: str
+    client_secret: str
     # Async Event Loop
     loop = asyncio.get_event_loop()
     ws_connection_url: str = "wss://www.deribit.com/ws/api/v2"
@@ -38,12 +36,6 @@ class StreamingAccountData:
     websocket_client: websockets.WebSocketClientProtocol = None
     refresh_token: str = None
     refresh_token_expiry_time: int = None
-
-    def __post_init__(self):
-        self.client_id: str = parse_dotenv(self.sub_account_id)["client_id"]
-        self.client_secret: str = config_oci.get_oci_key(
-            parse_dotenv(self.sub_account_id)["key_ocid"]
-        )
 
     async def ws_manager(
         self,
@@ -78,7 +70,7 @@ class StreamingAccountData:
                     ws_instruments = []
 
                     instrument_kinds = ["future, future_combo"]
-                    
+
                     for kind in instrument_kinds:
 
                         user_changes = f"user.changes.{kind}.any.raw"
@@ -162,12 +154,14 @@ class StreamingAccountData:
                             if message["method"] != "heartbeat":
 
                                 message_params: dict = message["params"]
-                                
+
                                 if message_params:
 
                                     message_params.update({"exchange": exchange})
-                                    message_params.update({"account_id": self.sub_account_id})
-                                        
+                                    message_params.update(
+                                        {"account_id": self.sub_account_id}
+                                    )
+
                                     # queing message to dispatcher
                                     await queue_general.put(message_params)
 
@@ -400,7 +394,7 @@ class StreamingAccountData:
 
         await asyncio.sleep(sleep_time)
 
-        id = str_mod.id_numbering(
+        id = end_point_template.id_numbering(
             operation,
             ws_channel,
         )
@@ -427,7 +421,7 @@ class StreamingAccountData:
 
         if "rest_api" in source:
 
-            extra_params: dict = await api_requests.get_api_end_point(
+            extra_params: dict = await end_point_params_template.get_api_end_point(
                 operation,
                 ws_channel,
             )

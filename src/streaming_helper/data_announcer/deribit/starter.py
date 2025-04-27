@@ -7,10 +7,7 @@ from loguru import logger as log
 # user defined formulas
 from streaming_helper.db_management import sqlite_management as db_mgt
 from streaming_helper.messaging import telegram_bot as tlgrm
-from streaming_helper.restful_api.deribit import (
-    api_requests,
-    cancelling_active_orders,
-)
+from streaming_helper.restful_api.deribit import api_requests
 from streaming_helper.utilities import (
     pickling,
     string_modification as str_mod,
@@ -31,16 +28,6 @@ async def initial_procedures(
 
         # get TRADABLE currencies
         currencies: list = [o["spot"] for o in tradable_config_app][0]
-
-        strategy_attributes = config_app["strategies"]
-
-        relevant_tables = config_app["relevant_tables"][0]
-
-        order_db_table = relevant_tables["orders_table"]
-
-        cancellable_strategies = [
-            o["strategy_label"] for o in strategy_attributes if o["cancellable"] == True
-        ]
 
         # get ALL traded currencies in deribit
         get_currencies_all = await api_requests.get_currencies()
@@ -86,13 +73,6 @@ async def initial_procedures(
             query_trades_active_where = f"WHERE instrument_name LIKE '%{currency}%'"
 
             query_trades = f"{query_trades_active_basic} {query_trades_active_where}"
-
-            await cancelling_active_orders.cancel_the_cancellables(
-                private_data,
-                order_db_table,
-                currency,
-                cancellable_strategies,
-            )
 
             my_trades_currency = await db_mgt.executing_query_with_return(query_trades)
 

@@ -11,7 +11,9 @@ from loguru import logger as log
 
 # user defined formulas
 from streaming_helper.db_management.redis_client import publishing_specific_purposes
-from streaming_helper.messaging.telegram_bot import telegram_bot_sendtext as telegram_bot
+from streaming_helper.messaging.telegram_bot import (
+    telegram_bot_sendtext as telegram_bot,
+)
 from streaming_helper.utilities.string_modification import extract_currency_from_text
 
 

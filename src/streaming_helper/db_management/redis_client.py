@@ -149,8 +149,7 @@ async def saving_and_publishing_result(
         await system_tools.parse_error_message_with_redis(
             client_redis,
             error,
-            )
-
+        )
 
 
 async def publishing_result(
@@ -160,7 +159,7 @@ async def publishing_result(
     """ """
 
     try:
-        
+
         channel = message["channel"]
 
         # publishing message
@@ -174,7 +173,7 @@ async def publishing_result(
         await system_tools.parse_error_message_with_redis(
             client_redis,
             error,
-            )
+        )
 
 
 async def saving_result(
@@ -186,7 +185,7 @@ async def saving_result(
     """ """
 
     try:
-        
+
         channel = message["channel"]
 
         await client_redis.hset(
@@ -200,7 +199,7 @@ async def saving_result(
         await system_tools.parse_error_message_with_redis(
             client_redis,
             error,
-            )
+        )
 
 
 async def querying_data(
@@ -222,7 +221,7 @@ async def querying_data(
         await system_tools.parse_error_message_with_redis(
             client_redis,
             error,
-            )
+        )
 
 
 async def publishing_specific_purposes(
@@ -289,11 +288,9 @@ async def publishing_specific_purposes(
             message,
         )
 
-
     except Exception as error:
 
         await system_tools.parse_error_message_with_redis(
             client_redis,
             error,
-            )
-
+        )

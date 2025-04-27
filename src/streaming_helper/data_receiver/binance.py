@@ -97,14 +97,14 @@ class StreamingDataBinance:
                         message: dict = orjson.loads(message)
 
                         if message:
-                            
+
                             data = message.get("data", None)
-                            
+
                             if data:
-                                
+
                                 data.update({"exchange": exchange})
                                 data.update({"account_id": self.sub_account_id})
-                          
+
                                 # queing message to dispatcher
                                 await queue_general.put(data)
 
@@ -116,7 +116,6 @@ class StreamingDataBinance:
                     (f"""data producer {exchange} - {error}"""),
                     "general_error",
                 )
-
 
     async def ws_operation(
         self,

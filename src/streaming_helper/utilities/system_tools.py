@@ -6,6 +6,7 @@ import signal
 import sys
 import orjson
 
+
 def convert_size(size_bytes):
     """Convert bytes to human readable format."""
     for unit in ["B", "KB", "MB", "GB", "TB"]:
@@ -224,7 +225,6 @@ def reading_from_db_pickle(
     )
 
 
-
 def parse_error_message(
     error: str,
     message: str = None,
@@ -250,9 +250,9 @@ def parse_error_message(
     if message != None:
         info = f"{message} \n \n {error} \n \n {traceback.format_exception(error)}"
 
-    #log.add(
+    # log.add(
     #    "error.log", backtrace=True, diagnose=True
-    #)  # Caution, may leak sensitive data in prod
+    # )  # Caution, may leak sensitive data in prod
 
     log.critical(f"{info}")
 
@@ -260,31 +260,29 @@ def parse_error_message(
 
 
 async def parse_error_message_with_redis(
-    client_redis: object,   
+    client_redis: object,
     error: str,
     message: str = None,
 ) -> str:
-    """
+    """ """
 
-    """
-    
     from streaming_helper.utilities import string_modification as str_mod
 
-    info = parse_error_message(error,
-                               message,
-                               )
-    
+    info = parse_error_message(
+        error,
+        message,
+    )
+
     channel = "error"
-    
+
     result: dict = str_mod.message_template()
-    
+
     pub_message = dict(
-                                data=info,
-                            )
+        data=info,
+    )
 
     result["params"].update({"channel": channel})
     result["params"].update(pub_message)
-
 
     # publishing message
     await client_redis.publish(
@@ -345,7 +343,6 @@ async def back_up_db(idle_time: int):
             parse_error_message(error)
 
         await asyncio.sleep(idle_time)
-
 
 
 class SignalHandler:

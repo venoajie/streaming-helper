@@ -4,6 +4,7 @@ import asyncio
 # import orjson
 import httpx
 
+
 async def private_connection(
     endpoint: str,
     client_id: str,
@@ -21,7 +22,7 @@ async def private_connection(
 async def telegram_bot_sendtext(
     bot_token: str,
     bot_chatID: str,
-    bot_message: str, 
+    bot_message: str,
     purpose: str = "general_error",
 ) -> str:
     """
@@ -44,4 +45,4 @@ async def telegram_bot_sendtext(
         client_id=bot_token,
         bot_chatID=bot_chatID,
         connection_url=connection_url,
-        )
+    )
