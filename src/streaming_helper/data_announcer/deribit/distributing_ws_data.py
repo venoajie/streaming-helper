@@ -102,7 +102,7 @@ async def caching_distributing_data(
 
         instruments_name = futures_instruments["instruments_name"]
 
-        ticker_all_cached = combining_ticker_data(instruments_name)
+        ticker_all_cached = await combining_ticker_data(instruments_name)
 
         sub_account_cached_params = initial_data_subaccount["params"]
 
@@ -314,7 +314,7 @@ def get_settlement_period(strategy_attributes: list) -> list:
     )
 
 
-def combining_ticker_data(instruments_name: str) -> list:
+async def combining_ticker_data(instruments_name: str) -> list:
     """_summary_
     https://blog.apify.com/python-cache-complete-guide/]
     https://medium.com/@jodielovesmaths/memoization-in-python-using-cache-36b676cb21ef
@@ -338,12 +338,12 @@ def combining_ticker_data(instruments_name: str) -> list:
 
         else:
 
-            basic_https_connection_url = end_point.basic_https()
+            connection_url = end_point.basic_https()
 
             endpoint_tickers = end_point.get_tickers_end_point(instrument_name)
 
             result_instrument = await connector.get_connected(
-                basic_https_connection_url,
+                connection_url,
                 endpoint_tickers,
             )
 

@@ -23,6 +23,7 @@ from aiohttp.helpers import BasicAuth
 
 # user defined formula
 from streaming_helper.utilities import error_handling, string_modification as str_mod
+from streaming_helper.restful_api.deribit import end_point_params_template as end_point_deribit
 from streaming_helper.restful_api.telegram import (
     end_point_params_template as telegram_end_point,
 )
@@ -59,8 +60,9 @@ async def get_connected(
 
                 if "deribit" in connection_url:
 
-                    response: dict = await telegram_response(
+                    response: dict = await deribit_response(
                         session,
+                        connection_endpoint,
                         endpoint,
                         client_id,
                         client_secret,
@@ -105,23 +107,17 @@ async def telegram_response(
 
 async def deribit_response(
     session: object,
+    connection_endpoint,
     endpoint: str = None,
     client_id: str = None,
     client_secret: str = None,
     params: str = None,
 ) -> None:
 
-    id = str_mod.id_numbering(
+    payload: dict = end_point_deribit.get_json_payload(
         endpoint,
-        endpoint,
-    )
-
-    payload: dict = {
-        "jsonrpc": "2.0",
-        "id": id,
-        "method": f"{endpoint}",
-        "params": params,
-    }
+        params,
+    )   
 
     async with session.post(
         connection_endpoint,

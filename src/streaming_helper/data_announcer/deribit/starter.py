@@ -34,6 +34,7 @@ async def initial_procedures(
         currencies: list = [o["spot"] for o in tradable_config_app][0]
 
         basic_https_connection_url = end_point.basic_https()
+    
         endpoint_currencies = end_point.get_currencies_end_point()
 
         # get ALL traded currencies in deribit
@@ -107,7 +108,6 @@ async def initial_procedures(
         await error_handling.parse_error_message_with_redis(
             client_redis,
             error,
-            "starter initial_procedures",
         )
 
 

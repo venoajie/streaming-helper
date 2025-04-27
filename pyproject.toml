@@ -1,6 +1,6 @@
 [project]
 name = "streaming-helper"
-version = "0.1.19"
+version = "0.1.31"
 
 authors = [
   { name="ven.ajie", email="venoajie@gmail.com" },

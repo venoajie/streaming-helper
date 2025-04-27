@@ -2,7 +2,7 @@
 
 import asyncio
 
-from streaming_helper.restful_api.deribit.api_requests import get_tickers
+from streaming_helper.restful_api.deribit import end_point_params_template as end_point
 from streaming_helper.utilities.pickling import read_data
 from streaming_helper.utilities.system_tools import (
     provide_path_for_file,
@@ -20,7 +20,7 @@ def reading_from_pkl_data(
     return read_data(path)
 
 
-def combining_ticker_data(instruments_name: str) -> list:
+async def combining_ticker_data(instruments_name: str) -> list:
     """_summary_
     https://blog.apify.com/python-cache-complete-guide/]
     https://medium.com/@jodielovesmaths/memoization-in-python-using-cache-36b676cb21ef
@@ -43,7 +43,17 @@ def combining_ticker_data(instruments_name: str) -> list:
             result_instrument = result_instrument[0]
 
         else:
-            result_instrument = get_tickers(instrument_name)
+            
+            connection_url = end_point.basic_https()
+
+            endpoint_tickers = end_point.get_tickers_end_point(instrument_name)
+
+            result_instrument = await connector.get_connected(
+                connection_url,
+                endpoint_tickers,
+            )
+            log.debug(f"ticker {result_instrument}")
+            
         result.append(result_instrument)
 
     return result
