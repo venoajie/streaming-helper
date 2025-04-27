@@ -9,8 +9,8 @@ from loguru import logger as log
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 from streaming_helper.db_management import redis_client, sqlite_management as db_mgt
-from streaming_helper.messaging import telegram_bot as tlgrm
-from streaming_helper.restful_api.deribit import api_requests
+from streaming_helper.restful_api.deribit import end_point_params_template as end_point
+from streaming_helper.restful_api import connector
 from streaming_helper.data_announcer.deribit import (
     get_instrument_summary,
     allocating_ohlc,
@@ -241,13 +241,12 @@ async def caching_distributing_data(
                 await pipe.execute()
 
     except Exception as error:
-
-        system_tools.parse_error_message(error)
-
-        await tlgrm.telegram_bot_sendtext(
-            f"saving result {error}",
-            "general_error",
-        )
+        
+        await system_tools.parse_error_message_with_redis(
+            client_redis,
+            error,
+            "caching_distributing_data",
+        )   
 
 
 def compute_notional_value(
@@ -338,7 +337,15 @@ def combining_ticker_data(instruments_name: str) -> list:
             result_instrument = result_instrument[0]
 
         else:
-            result_instrument = api_requests.get_tickers(instrument_name)
+            
+            basic_https_connection_url = end_point.basic_https()
+
+            endpoint_tickers = end_point.get_tickers_end_point(instrument_name)
+
+            result_instrument = await connector. get_connected(
+                        basic_https_connection_url,
+                        endpoint_tickers,
+                    )
 
         result.append(result_instrument)
 

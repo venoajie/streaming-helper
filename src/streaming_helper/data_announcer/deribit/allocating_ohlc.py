@@ -13,10 +13,10 @@ from streaming_helper.db_management.sqlite_management import (
     querying_arithmetic_operator,
     update_status_data,
 )
-from streaming_helper.messaging.telegram_bot import telegram_bot_sendtext
-from streaming_helper.restful_api.deribit.api_requests import get_ohlc_data
+from streaming_helper.restful_api.deribit import end_point_params_template as end_point
+from streaming_helper.restful_api import connector
 from streaming_helper.utilities.string_modification import remove_apostrophes_from_json
-from streaming_helper.utilities.system_tools import parse_error_message
+from streaming_helper.utilities import system_tools
 from loguru import logger as log
 
 
@@ -54,6 +54,10 @@ async def updating_ohlc(
         is_updated = True
 
         start_timestamp = 0
+
+        basic_https_connection_url = end_point.basic_https()
+
+        endpoint_tradingview = end_point.endpoint_tradingview()
 
         while is_updated:
 
@@ -161,15 +165,19 @@ async def updating_ohlc(
 
                         else:
 
-                            # catch up data through FIX
-                            result_all = await get_ohlc_data(
+                            endpoint_ohlc = end_point.get_ohlc_end_point(
+                                endpoint_tradingview,
                                 instrument_name,
                                 resolution,
                                 start_timestamp,
                                 end_timestamp,
-                                False,
-                            )
+                                False,)
 
+                            # catch up data through FIX
+                            result_all = await connector. get_connected(
+                        basic_https_connection_url,
+                        endpoint_ohlc,
+                    )
                             await publishing_result(
                                 client_redis,
                                 chart_low_high_tick_channel,
@@ -201,13 +209,12 @@ async def updating_ohlc(
                 await asyncio.sleep(0.001)
 
     except Exception as error:
-
-        await telegram_bot_sendtext(
-            f"updating_ohlc - {error}",
-            "general_error",
-        )
-
-        parse_error_message(error)
+        
+        await system_tools.parse_error_message_with_redis(
+            client_redis,
+            error,
+            "updating_ohlc",
+        )   
 
 
 async def inserting_open_interest(

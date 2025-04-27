@@ -29,14 +29,13 @@ def get_tradingview_chart_data_end_point() -> str:
 
 
 def get_ohlc_end_point(
+    endpoint_tradingview: str,
     instrument_name: str,
     resolution: int,
     qty_or_start_time_stamp: int,
     provided_end_timestamp: int = None,
     qty_as_start_time_stamp: bool = False,
 ) -> str:
-
-    url = get_tradingview_chart_data_end_point()
 
     now_unix = time_mod.get_now_unix_time()
 
@@ -52,7 +51,7 @@ def get_ohlc_end_point(
     else:
         end_timestamp = now_unix
 
-    return f"{url}end_timestamp={end_timestamp}&instrument_name={instrument_name}&resolution={resolution}&start_timestamp={start_timestamp}"
+    return f"{endpoint_tradingview}end_timestamp={end_timestamp}&instrument_name={instrument_name}&resolution={resolution}&start_timestamp={start_timestamp}"
 
 
 def get_json_payload(

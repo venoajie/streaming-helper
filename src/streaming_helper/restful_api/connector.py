@@ -24,6 +24,7 @@ from aiohttp.helpers import BasicAuth
 
 # user defined formula
 from streaming_helper.utilities import string_modification as str_mod
+from streaming_helper.restful_api.telegram import end_point_params_template as telegram_end_point
 
 
 async def get_connected(
@@ -42,17 +43,15 @@ async def get_connected(
 
             if "telegram" in connection_url:
 
-                endpoint = (
-                    client_id
-                    + ("/sendMessage?chat_id=")
-                    + client_secret
-                    + ("&parse_mode=HTML&text=")
-                    + str(params)
+                endpoint = telegram_end_point.message_end_point(
+                    client_id,
+                    client_secret,
+                    params
                 )
 
                 connection_endpoint = connection_url + endpoint
 
-                async with session.get(connection_url + endpoint) as response:
+                async with session.get(connection_endpoint) as response:
 
                     # RESToverHTTP Response Content
                     response = await response.json()

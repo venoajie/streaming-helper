@@ -245,14 +245,10 @@ def parse_error_message(
 
     from loguru import logger as log
 
-    info = f"{error} \n \n {traceback.format_exception(error)}"
+    info = f"{traceback.format_exception(error)}"
 
     if message != None:
-        info = f"{message} \n \n {error} \n \n {traceback.format_exception(error)}"
-
-    # log.add(
-    #    "error.log", backtrace=True, diagnose=True
-    # )  # Caution, may leak sensitive data in prod
+        info = f"{message} {traceback.format_exception(error)}"
 
     log.critical(f"{info}")
 
@@ -263,7 +259,7 @@ async def parse_error_message_with_redis(
     client_redis: object,
     error: str,
     message: str = None,
-) -> str:
+) -> None:
     """ """
 
     from streaming_helper.utilities import string_modification as str_mod

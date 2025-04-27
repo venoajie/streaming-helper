@@ -32,13 +32,7 @@ async def get_redis_message(message_byte: bytes) -> dict:
 
     except Exception as error:
 
-        from messaging.telegram_bot import telegram_bot_sendtext
-
         from utilities.system_tools import parse_error_message
 
         parse_error_message(f"get_message redis {error}")
 
-        await telegram_bot_sendtext(
-            f"get_message redis - {error}",
-            "general_error",
-        )
