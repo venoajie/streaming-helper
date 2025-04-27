@@ -24,7 +24,7 @@ sys.path.append(this_folder)
 # user defined formula
 from streaming_helper.configuration import config
 from streaming_helper.messaging.telegram_bot import telegram_bot_sendtext
-from streaming_helper.utilities import system_tools
+from streaming_helper.utilities import error_handling
 
 
 def parse_dotenv(sub_account: str) -> dict:
@@ -110,11 +110,9 @@ class StreamingDataBinance:
 
             except Exception as error:
 
-                system_tools.parse_error_message(error)
-
-                await telegram_bot_sendtext(
-                    (f"""data producer {exchange} - {error}"""),
-                    "general_error",
+                await error_handling.parse_error_message_with_redis(
+                    client_redis,
+                    error,
                 )
 
     async def ws_operation(

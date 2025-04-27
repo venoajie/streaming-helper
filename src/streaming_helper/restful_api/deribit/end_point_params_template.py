@@ -17,15 +17,16 @@ def get_instruments_end_point(currency) -> str:
 
 
 def basic_https() -> str:
-    return f"https://deribit.com/api/v2/public"
+    return f"https://deribit.com/api/v2/"
 
 
 def get_tickers_end_point(instrument_name: str) -> str:
-    return f"{basic_https()}/ticker?instrument_name={instrument_name}"
+
+    return f"public/ticker?instrument_name={instrument_name}"
 
 
 def get_tradingview_chart_data_end_point() -> str:
-    return f"{basic_https()}/get_tradingview_chart_data?"
+    return f"get_tradingview_chart_data?"
 
 
 def get_ohlc_end_point(

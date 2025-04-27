@@ -19,7 +19,7 @@ from streaming_helper.restful_api.deribit import (
     end_point_params_template,
     end_point_template,
 )
-from streaming_helper.utilities import string_modification as str_mod, system_tools
+from streaming_helper.utilities import error_handling, string_modification as str_mod
 
 
 @dataclass(unsafe_hash=True, slots=True)
@@ -262,11 +262,8 @@ class StreamingAccountData:
 
             except Exception as error:
 
-                system_tools.parse_error_message(error)
-
-                await telegram_bot_sendtext(
-                    (f"""data producer - {error}"""),
-                    "general_error",
+                await error_handling.parse_error_message(
+                    error,
                 )
 
     async def establish_heartbeat(self) -> None:
@@ -288,11 +285,8 @@ class StreamingAccountData:
 
         except Exception as error:
 
-            system_tools.parse_error_message(error)
-
-            await telegram_bot_sendtext(
-                (f"""data producer establish_heartbeat - {error}"""),
-                "general_error",
+            await error_handling.parse_error_message(
+                client_redis,
             )
 
     async def heartbeat_response(self) -> None:
@@ -313,12 +307,7 @@ class StreamingAccountData:
 
         except Exception as error:
 
-            system_tools.parse_error_message(error)
-
-            await telegram_bot_sendtext(
-                (f"""data producer heartbeat_response - {error}"""),
-                "general_error",
-            )
+            error_handling.parse_error_message(error)
 
     async def ws_auth(self) -> None:
         """
@@ -341,12 +330,7 @@ class StreamingAccountData:
 
         except Exception as error:
 
-            system_tools.parse_error_message(error)
-
-            await telegram_bot_sendtext(
-                (f"""data producer - {error}"""),
-                "general_error",
-            )
+            error_handling.parse_error_message(error)
 
     async def ws_refresh_auth(self) -> None:
         """

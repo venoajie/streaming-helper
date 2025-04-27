@@ -12,7 +12,7 @@ import redis.asyncio as aioredis
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
-from streaming_helper.utilities import system_tools
+from streaming_helper.utilities import error_handling
 
 
 class RedisPubSubManager:
@@ -146,7 +146,7 @@ async def saving_and_publishing_result(
 
     except Exception as error:
 
-        await system_tools.parse_error_message_with_redis(
+        await error_handling.parse_error_message_with_redis(
             client_redis,
             error,
         )
@@ -170,7 +170,7 @@ async def publishing_result(
 
     except Exception as error:
 
-        await system_tools.parse_error_message_with_redis(
+        await error_handling.parse_error_message_with_redis(
             client_redis,
             error,
         )
@@ -196,7 +196,7 @@ async def saving_result(
 
     except Exception as error:
 
-        await system_tools.parse_error_message_with_redis(
+        await error_handling.parse_error_message_with_redis(
             client_redis,
             error,
         )
@@ -218,7 +218,7 @@ async def querying_data(
 
     except Exception as error:
 
-        await system_tools.parse_error_message_with_redis(
+        await error_handling.parse_error_message_with_redis(
             client_redis,
             error,
         )
@@ -268,7 +268,7 @@ async def publishing_specific_purposes(
 
         if not redis_channels:
 
-            from utilities.system_tools import get_config_tomli
+            from streaming_helper.utilities.system_tools import get_config_tomli
 
             # registering strategy config file
             file_toml = "config_strategies.toml"
@@ -290,7 +290,7 @@ async def publishing_specific_purposes(
 
     except Exception as error:
 
-        await system_tools.parse_error_message_with_redis(
+        await error_handling.parse_error_message_with_redis(
             client_redis,
             error,
         )

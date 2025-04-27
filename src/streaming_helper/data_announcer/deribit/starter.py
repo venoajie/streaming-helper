@@ -2,6 +2,8 @@
 
 # built ins
 import asyncio
+
+# installed
 from loguru import logger as log
 
 # user defined formulas
@@ -9,6 +11,7 @@ from streaming_helper.db_management import sqlite_management as db_mgt
 from streaming_helper.restful_api.deribit import end_point_params_template as end_point
 from streaming_helper.restful_api import connector
 from streaming_helper.utilities import (
+    error_handling,
     pickling,
     string_modification as str_mod,
     system_tools,
@@ -29,15 +32,15 @@ async def initial_procedures(
 
         # get TRADABLE currencies
         currencies: list = [o["spot"] for o in tradable_config_app][0]
-        
+
         basic_https_connection_url = end_point.basic_https()
         endpoint_currencies = end_point.get_currencies_end_point()
 
         # get ALL traded currencies in deribit
-        get_currencies_all = await connector. get_connected(
-    basic_https_connection_url,
-    endpoint_currencies,
-)
+        get_currencies_all = await connector.get_connected(
+            basic_https_connection_url,
+            endpoint_currencies,
+        )
 
         all_exc_currencies = [o["currency"] for o in get_currencies_all["result"]]
 
@@ -57,16 +60,16 @@ async def initial_procedures(
         )
 
         for currency in all_exc_currencies:
-            
+
             get_instruments_end_point = end_point.get_instruments(currency)
 
             endpoint_instruments = end_point.get_instruments_end_point(currency)
 
             # get ALL traded currencies in deribit
-            instruments = await connector. get_connected(
-        basic_https_connection_url,
-        endpoint_instruments,
-    )
+            instruments = await connector.get_connected(
+                basic_https_connection_url,
+                endpoint_instruments,
+            )
             my_path_instruments = system_tools.provide_path_for_file(
                 "instruments", currency
             )
@@ -100,12 +103,12 @@ async def initial_procedures(
                 )
 
     except Exception as error:
-                
-        await system_tools.parse_error_message_with_redis(
+
+        await error_handling.parse_error_message_with_redis(
             client_redis,
             error,
             "starter initial_procedures",
-        )   
+        )
 
 
 async def refill_db(

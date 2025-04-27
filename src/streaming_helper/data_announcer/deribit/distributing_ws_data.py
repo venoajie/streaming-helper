@@ -17,6 +17,7 @@ from streaming_helper.data_announcer.deribit import (
 )
 from streaming_helper.utilities import (
     caching,
+    error_handling,
     pickling,
     string_modification as str_mod,
     system_tools,
@@ -241,12 +242,11 @@ async def caching_distributing_data(
                 await pipe.execute()
 
     except Exception as error:
-        
-        await system_tools.parse_error_message_with_redis(
+
+        await error_handling.parse_error_message_with_redis(
             client_redis,
             error,
-            "caching_distributing_data",
-        )   
+        )
 
 
 def compute_notional_value(
@@ -337,15 +337,15 @@ def combining_ticker_data(instruments_name: str) -> list:
             result_instrument = result_instrument[0]
 
         else:
-            
+
             basic_https_connection_url = end_point.basic_https()
 
             endpoint_tickers = end_point.get_tickers_end_point(instrument_name)
 
-            result_instrument = await connector. get_connected(
-                        basic_https_connection_url,
-                        endpoint_tickers,
-                    )
+            result_instrument = await connector.get_connected(
+                basic_https_connection_url,
+                endpoint_tickers,
+            )
 
         result.append(result_instrument)
 

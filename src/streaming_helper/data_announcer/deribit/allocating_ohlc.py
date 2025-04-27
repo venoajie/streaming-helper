@@ -1,11 +1,13 @@
-#!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
 
 # built ins
 import asyncio
-import orjson
 
+# installed
+import orjson
+from loguru import logger as log
+
+# user defined formula
 from streaming_helper.db_management.redis_client import publishing_result
 from streaming_helper.db_management.sqlite_management import (
     executing_query_with_return,
@@ -15,9 +17,7 @@ from streaming_helper.db_management.sqlite_management import (
 )
 from streaming_helper.restful_api.deribit import end_point_params_template as end_point
 from streaming_helper.restful_api import connector
-from streaming_helper.utilities.string_modification import remove_apostrophes_from_json
-from streaming_helper.utilities import system_tools
-from loguru import logger as log
+from streaming_helper.utilities import error_handling, string_modification as str_mod
 
 
 async def last_tick_fr_sqlite(last_tick_query_ohlc1: str) -> int:
@@ -135,7 +135,7 @@ async def updating_ohlc(
                                 high_from_ws = data["high"]
                                 low_from_ws = data["low"]
 
-                                ohlc_from_sqlite = remove_apostrophes_from_json(
+                                ohlc_from_sqlite = str_mod.remove_apostrophes_from_json(
                                     o["data"] for o in result_from_sqlite
                                 )[0]
 
@@ -147,21 +147,11 @@ async def updating_ohlc(
                                     or low_from_ws < low_from_db
                                 ):
 
-                                    # log.warning(f"ohlc_from_sqlite {ohlc_from_sqlite}")
-                                    # log.info(f"resolution {resolution}  data {data}")
-
-                                    # log.warning(
-                                    #    f"high_from_ws > high_from_db or low_from_ws < low_from_db {high_from_ws > high_from_db or low_from_ws < low_from_db}"
-                                    # )
-
                                     await publishing_result(
                                         client_redis,
                                         chart_low_high_tick_channel,
                                         pub_message,
                                     )
-
-                                # is_updated = False
-                                # break
 
                         else:
 
@@ -171,13 +161,15 @@ async def updating_ohlc(
                                 resolution,
                                 start_timestamp,
                                 end_timestamp,
-                                False,)
+                                False,
+                            )
 
                             # catch up data through FIX
-                            result_all = await connector. get_connected(
-                        basic_https_connection_url,
-                        endpoint_ohlc,
-                    )
+                            result_all = await connector.get_connected(
+                                basic_https_connection_url,
+                                endpoint_ohlc,
+                            )
+
                             await publishing_result(
                                 client_redis,
                                 chart_low_high_tick_channel,
@@ -191,16 +183,11 @@ async def updating_ohlc(
                                     result,
                                 )
 
-                            # is_updated = False
-                            # break
-
             except Exception as error:
 
-                parse_error_message(error)
-
-                await telegram_bot_sendtext(
-                    f"updating ticker - {error}",
-                    "general_error",
+                await error_handling.parse_error_message_with_redis(
+                    client_redis,
+                    error,
                 )
 
                 continue
@@ -209,12 +196,11 @@ async def updating_ohlc(
                 await asyncio.sleep(0.001)
 
     except Exception as error:
-        
-        await system_tools.parse_error_message_with_redis(
+
+        await error_handling.parse_error_message_with_redis(
             client_redis,
             error,
-            "updating_ohlc",
-        )   
+        )
 
 
 async def inserting_open_interest(
@@ -250,12 +236,10 @@ async def inserting_open_interest(
 
     except Exception as error:
 
-        await telegram_bot_sendtext(
-            f"error inserting open interest - {error}",
-            "general_error",
+        await error_handling.parse_error_message_with_redis(
+            client_redis,
+            error,
         )
-
-        parse_error_message(error)
 
 
 def currency_inline_with_database_address(

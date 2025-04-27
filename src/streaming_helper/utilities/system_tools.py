@@ -225,68 +225,6 @@ def reading_from_db_pickle(
     )
 
 
-def parse_error_message(
-    error: str,
-    message: str = None,
-) -> str:
-    """
-
-    Capture & emit error message
-
-    Args:
-        message (str): error message
-
-    Returns:
-        trace back error message
-
-    """
-
-    import traceback
-
-    from loguru import logger as log
-
-    info = f"{traceback.format_exception(error)}"
-
-    if message != None:
-        info = f"{message} {traceback.format_exception(error)}"
-
-    log.critical(f"{info}")
-
-    return info
-
-
-async def parse_error_message_with_redis(
-    client_redis: object,
-    error: str,
-    message: str = None,
-) -> None:
-    """ """
-
-    from streaming_helper.utilities import string_modification as str_mod
-
-    info = parse_error_message(
-        error,
-        message,
-    )
-
-    channel = "error"
-
-    result: dict = str_mod.message_template()
-
-    pub_message = dict(
-        data=info,
-    )
-
-    result["params"].update({"channel": channel})
-    result["params"].update(pub_message)
-
-    # publishing message
-    await client_redis.publish(
-        channel,
-        orjson.dumps(message),
-    )
-
-
 def check_file_attributes(filepath: str) -> None:
     """
 

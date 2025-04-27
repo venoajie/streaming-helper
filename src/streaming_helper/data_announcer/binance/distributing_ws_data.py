@@ -3,6 +3,7 @@
 # built ins
 import asyncio
 
+# user defined formula
 from streaming_helper.db_management import redis_client
 from streaming_helper.messaging import telegram_bot as tlgrm
 from streaming_helper.utilities import string_modification as str_mod, system_tools
@@ -63,15 +64,17 @@ async def caching_distributing_data(
 
                 except Exception as error:
 
-                    system_tools.parse_error_message(error)
+                    await system_tools.parse_error_message_with_redis(
+                        client_redis,
+                        error,
+                    )
 
     except Exception as error:
 
-        system_tools.parse_error_message(error)
-
-        await tlgrm.telegram_bot_sendtext(
-            f"saving result {error}",
-            "general_error",
+        # handle error
+        await system_tools.parse_error_message_with_redis(
+            client_redis,
+            error,
         )
 
 

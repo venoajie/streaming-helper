@@ -11,17 +11,11 @@ from loguru import logger as log
 
 # user defined formulas
 from streaming_helper.db_management.redis_client import publishing_specific_purposes
-from streaming_helper.messaging.telegram_bot import (
-    telegram_bot_sendtext as telegram_bot,
+
+from streaming_helper.utilities import (
+    error_handling,
+    string_modification as str_mod,
 )
-from streaming_helper.utilities.string_modification import extract_currency_from_text
-
-
-def catch_error(error, idle: int = None) -> list:
-    """ """
-    from utilities import system_tools
-
-    system_tools.catch_error_message(error, idle)
 
 
 async def telegram_bot_sendtext(bot_message, purpose: str = "general_error") -> None:
@@ -43,7 +37,11 @@ async def create_dataBase_sqlite(
         await conn.close()
 
     except Exception as error:
-        print(error)
+
+        await error_handling.parse_error_message_with_redis(
+            client_redis,
+            error,
+        )
 
 
 @contextmanager
@@ -63,9 +61,11 @@ async def db_ops(db_name: str = "databases/trading.sqlite3"):
 
     except Exception as e:
 
-        await telegram_bot_sendtext("sqlite operation", "failed_order")
-        await telegram_bot_sendtext(str(e), "failed_order")
-        log.critical(e)
+        await error_handling.parse_error_message_with_redis(
+            client_redis,
+            e,
+        )
+
         await conn.rollback()
         raise e
 
@@ -109,9 +109,10 @@ async def insert_tables(
                     await db.execute(insert_table_json)
 
     except Exception as error:
-        log.critical(f"insert_tables {table_name} {error}")
-        await telegram_bot_sendtext(
-            f"sqlite operation insert_tables, failed_order  {table_name} {error} "
+
+        await error_handling.parse_error_message_with_redis(
+            client_redis,
+            error,
         )
 
     finally:
@@ -185,7 +186,11 @@ async def querying_table(
 
     except Exception as error:
         log.critical(f"querying_table  {table} {error}")
-        await telegram_bot_sendtext(f"sqlite operation-{query_table}", "failed_order")
+
+        await error_handling.parse_error_message_with_redis(
+            client_redis,
+            error,
+        )
 
     return dict(
         all=[] if combine_result in NONE_DATA else (combine_result),
@@ -226,7 +231,11 @@ async def deleting_row(
 
     except Exception as error:
         log.critical(f"deleting_row {query_table} {error}")
-        await telegram_bot_sendtext(f"sqlite operation-{query_table}", "failed_order")
+
+        await error_handling.parse_error_message_with_redis(
+            client_redis,
+            error,
+        )
 
     finally:
 
@@ -277,8 +286,11 @@ async def querying_duplicated_transactions(
 
     except Exception as error:
         log.critical(f"querying_table {query_table} {error}")
-        await telegram_bot_sendtext("sqlite operation", "failed_order")
-        await telegram_bot_sendtext(f"sqlite operation-{query_table}", "failed_order")
+
+        await error_handling.parse_error_message_with_redis(
+            client_redis,
+            error,
+        )
 
     return 0 if (combine_result == [] or combine_result == None) else (combine_result)
 
@@ -305,7 +317,11 @@ async def add_additional_column(
 
     except Exception as error:
         print(f"querying_table {query_table} {error}")
-        await telegram_bot_sendtext("sqlite operation", "failed get_last_tick")
+
+        await error_handling.parse_error_message_with_redis(
+            client_redis,
+            error,
+        )
 
     try:
         return 0 if result == None else int(result[0])
@@ -366,8 +382,10 @@ async def update_status_data(
         log.critical(f" ERROR {error}")
         log.info(f"query update status data {query}")
 
-        await telegram_bot_sendtext("sqlite operation insert_tables", "failed_order")
-        # await telegram_bot_sendtext(f"sqlite operation","failed_order")
+        await error_handling.parse_error_message_with_redis(
+            client_redis,
+            error,
+        )
 
     finally:
 
@@ -507,7 +525,7 @@ def querying_based_on_currency_or_instrument_and_strategy(
 
         standard_columns = f"{standard_columns}, trade_id, price, type"
 
-        table = f"transaction_log_{extract_currency_from_text(currency_or_instrument).lower()}_json"
+        table = f"transaction_log_{str_mod.extract_currency_from_text(currency_or_instrument).lower()}_json"
 
         # log.error (f"table transaction_log {table}")
 
@@ -636,8 +654,11 @@ async def executing_query_with_return(
         # import traceback
         log.critical(f"querying_table {query_table} {error}")
         # traceback.format_exc()
-        await telegram_bot_sendtext("sqlite operation", "failed_order")
-        await telegram_bot_sendtext(f"sqlite operation-{query_table}", "failed_order")
+
+        await error_handling.parse_error_message_with_redis(
+            client_redis,
+            error,
+        )
 
     return [] if not combine_result else (combine_result)
 

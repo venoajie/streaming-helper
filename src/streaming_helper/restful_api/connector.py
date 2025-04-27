@@ -16,77 +16,118 @@ references:
 
 # built ins
 import asyncio
-from typing import Dict
 
 # installed
 import aiohttp
 from aiohttp.helpers import BasicAuth
 
 # user defined formula
-from streaming_helper.utilities import string_modification as str_mod
-from streaming_helper.restful_api.telegram import end_point_params_template as telegram_end_point
+from streaming_helper.utilities import error_handling, string_modification as str_mod
+from streaming_helper.restful_api.telegram import (
+    end_point_params_template as telegram_end_point,
+)
 
 
 async def get_connected(
     connection_url: str,
-    endpoint: str,
+    endpoint: str = None,
     client_id: str = None,
     client_secret: str = None,
     params: str = None,
 ) -> None:
 
-    async with aiohttp.ClientSession() as session:
+    try:
 
-        connection_endpoint = connection_url + endpoint
+        async with aiohttp.ClientSession() as session:
 
-        if client_id:
-
-            if "telegram" in connection_url:
-
-                endpoint = telegram_end_point.message_end_point(
-                    client_id,
-                    client_secret,
-                    params
-                )
+            if endpoint:
 
                 connection_endpoint = connection_url + endpoint
+
+            if client_id:
+
+                if "telegram" in connection_url:
+
+                    response = await telegram_response(
+                        session,
+                        connection_url,
+                        endpoint,
+                        client_id,
+                        client_secret,
+                        params,
+                    )
+
+                if "deribit" in connection_url:
+
+                    response: dict = await telegram_response(
+                        session,
+                        endpoint,
+                        client_id,
+                        client_secret,
+                        params,
+                    )
+
+            else:
 
                 async with session.get(connection_endpoint) as response:
 
                     # RESToverHTTP Response Content
-                    response = await response.json()
+                    response: dict = await response.json()
 
-            if "deribit" in connection_url:
+            return response
 
-                id = str_mod.id_numbering(
-                    endpoint,
-                    endpoint,
-                )
+    except Exception as error:
 
-                payload: Dict = {
-                    "jsonrpc": "2.0",
-                    "id": id,
-                    "method": f"{endpoint}",
-                    "params": params,
-                }
+        await error_handling.parse_error_message_with_redis(
+            client_redis,
+            error,
+        )
 
-                async with session.post(
-                    connection_endpoint,
-                    auth=BasicAuth(client_id, client_secret),
-                    json=payload,
-                ) as response:
 
-                    # RESToverHTTP Status Code
-                    status_code: int = response.status
+async def telegram_response(
+    session: object,
+    connection_url: str,
+    endpoint: str = None,
+    client_id: str = None,
+    client_secret: str = None,
+    params: str = None,
+) -> None:
+    """ """
+    endpoint = telegram_end_point.message_end_point(client_id, client_secret, params)
 
-                    # RESToverHTTP Response Content
-                    response: Dict = await response.json()
+    connection_endpoint = connection_url + endpoint
 
-        else:
+    async with session.get(connection_endpoint) as response:
 
-            async with session.get(connection_endpoint) as response:
+        # RESToverHTTP Response Content
+        return await response.json()
 
-                # RESToverHTTP Response Content
-                response: Dict = await response.json()
 
-        return response
+async def deribit_response(
+    session: object,
+    endpoint: str = None,
+    client_id: str = None,
+    client_secret: str = None,
+    params: str = None,
+) -> None:
+
+    id = str_mod.id_numbering(
+        endpoint,
+        endpoint,
+    )
+
+    payload: dict = {
+        "jsonrpc": "2.0",
+        "id": id,
+        "method": f"{endpoint}",
+        "params": params,
+    }
+
+    async with session.post(
+        connection_endpoint,
+        auth=BasicAuth(client_id, client_secret),
+        json=payload,
+    ) as response:
+
+        # RESToverHTTP Response Content
+        return await response.json()
