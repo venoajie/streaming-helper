@@ -40,8 +40,13 @@ async def get_connected(
     async with aiohttp.ClientSession() as session:
 
         if endpoint:
+            
+            from loguru import logger as log
 
+            log.debug(f"connection_url {connection_url} endpoint {endpoint}")
             connection_endpoint = connection_url + endpoint
+            
+            log.debug(f"connection_endpoint {connection_endpoint} ")
 
         if client_id:
 
