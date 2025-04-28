@@ -22,7 +22,6 @@ import aiohttp
 from aiohttp.helpers import BasicAuth
 
 # user defined formula
-from streaming_helper.utilities import error_handling, string_modification as str_mod
 from streaming_helper.restful_api.deribit import end_point_params_template as end_point_deribit
 from streaming_helper.restful_api.telegram import (
     end_point_params_template as telegram_end_point,
@@ -37,53 +36,45 @@ async def get_connected(
     params: str = None,
 ) -> None:
 
-    try:
 
-        async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession() as session:
 
-            if endpoint:
+        if endpoint:
 
-                connection_endpoint = connection_url + endpoint
+            connection_endpoint = connection_url + endpoint
 
-            if client_id:
+        if client_id:
 
-                if "telegram" in connection_url:
+            if "telegram" in connection_url:
 
-                    response = await telegram_response(
-                        session,
-                        connection_url,
-                        endpoint,
-                        client_id,
-                        client_secret,
-                        params,
-                    )
+                response = await telegram_response(
+                    session,
+                    connection_url,
+                    endpoint,
+                    client_id,
+                    client_secret,
+                    params,
+                )
 
-                if "deribit" in connection_url:
+            if "deribit" in connection_url:
 
-                    response: dict = await deribit_response(
-                        session,
-                        connection_endpoint,
-                        endpoint,
-                        client_id,
-                        client_secret,
-                        params,
-                    )
+                response: dict = await deribit_response(
+                    session,
+                    connection_endpoint,
+                    endpoint,
+                    client_id,
+                    client_secret,
+                    params,
+                )
 
-            else:
+        else:
 
-                async with session.get(connection_endpoint) as response:
+            async with session.get(connection_endpoint) as response:
 
-                    # RESToverHTTP Response Content
-                    response: dict = await response.json()
+                # RESToverHTTP Response Content
+                response: dict = await response.json()
 
-            return response
-
-    except Exception as error:
-
-        await error_handling.parse_error_message_with_redis(
-            client_redis,
-            error,
-        )
+        return response
 
 
 async def telegram_response(
@@ -113,11 +104,16 @@ async def deribit_response(
     client_secret: str = None,
     params: str = None,
 ) -> None:
+    
+    from loguru import logger as log
 
     payload: dict = end_point_deribit.get_json_payload(
         endpoint,
         params,
     )   
+    
+    log.warning(f"payload {payload} endpoint {endpoint} params {params} ")
+    log.debug(f"client_id {client_id} client_secret {client_secret} connection_endpoint {connection_endpoint} ")
 
     async with session.post(
         connection_endpoint,
@@ -127,3 +123,5 @@ async def deribit_response(
 
         # RESToverHTTP Response Content
         return await response.json()
+
+
