@@ -17,16 +17,18 @@ from streaming_helper.utilities import (
     error_handling,
 )
 
+
 def get_label_main(
-    result: list, 
+    result: list,
     strategy_label: str,
-    ) -> list:
+) -> list:
     """ """
 
     return [
         o
         for o in result
-        if str_mod.parsing_label(strategy_label)["main"] == str_mod.parsing_label(o["label"])["main"]
+        if str_mod.parsing_label(strategy_label)["main"]
+        == str_mod.parsing_label(o["label"])["main"]
     ]
 
 

@@ -302,9 +302,9 @@ async def processing_orders(
             except Exception as error:
 
                 await error_handling.parse_error_message_with_redis(
-            client_redis,
-            error,
-        )
+                    client_redis,
+                    error,
+                )
 
                 continue
 
@@ -321,7 +321,7 @@ async def processing_orders(
 
 async def if_order_is_true(
     client_id: str,
-    client_secret: str, 
+    client_secret: str,
     connection_url: str,
     non_checked_strategies: list,
     order: dict,
@@ -355,18 +355,22 @@ async def if_order_is_true(
 
             else:
                 if ordered == []:
-                                        
-                    send_limit_order_end_point= end_point_params_template.send_orders_end_point(params)        
 
-                    send_limit_order_params = end_point_params_template.send_limit_order_params(params)
-                    
-                    send_limit_result =  await connector.get_connected(
+                    send_limit_order_end_point = (
+                        end_point_params_template.send_orders_end_point(params)
+                    )
+
+                    send_limit_order_params = (
+                        end_point_params_template.send_limit_order_params(params)
+                    )
+
+                    send_limit_result = await connector.get_connected(
                         connection_url,
                         send_limit_order_end_point,
                         client_id,
                         client_secret,
                         send_limit_order_params,
-                        )
+                    )
 
                     return send_limit_result
 
@@ -686,7 +690,7 @@ async def saving_traded_orders(
 
 async def saving_oto_order(
     client_id: str,
-    client_secret: str, 
+    client_secret: str,
     non_checked_strategies: list,
     orders: list,
     order_db_table: str,
@@ -701,21 +705,21 @@ async def saving_oto_order(
     kind = "future"
     type = "trigger_all"
 
-    open_orders_end_point= end_point_params_template.get_open_orders_end_point()        
+    open_orders_end_point = end_point_params_template.get_open_orders_end_point()
 
-    open_orders_params = end_point_params_template.send_limit_order_params(kind,type)
-    
+    open_orders_params = end_point_params_template.send_limit_order_params(kind, type)
+
     connection_url = end_point_params_template.basic_https()
-    
-    open_orders =  await connector.get_connected(
+
+    open_orders = await connector.get_connected(
         connection_url,
         open_orders_end_point,
         client_id,
         client_secret,
         open_orders_params,
-        )
-    
-    open_orders_from_exchange =  open_orders["result"]  
+    )
+
+    open_orders_from_exchange = open_orders["result"]
 
     transaction_secondary = [
         o for o in open_orders_from_exchange if transaction_main_oto in o["order_id"]

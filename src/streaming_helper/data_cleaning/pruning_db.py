@@ -11,7 +11,7 @@ from streaming_helper.utilities import error_handling
 async def count_and_delete_ohlc_rows(
     database: str,
     table: str,
-    ) -> None:
+) -> None:
 
     try:
         rows_threshold = max_rows(table)
@@ -22,7 +22,9 @@ async def count_and_delete_ohlc_rows(
         else:
             where_filter = f"tick"
 
-        count_rows_query = db_mgt.querying_arithmetic_operator(where_filter, "COUNT", table)
+        count_rows_query = db_mgt.querying_arithmetic_operator(
+            where_filter, "COUNT", table
+        )
 
         rows = await db_mgt.executing_query_with_return(count_rows_query)
 
@@ -32,9 +34,13 @@ async def count_and_delete_ohlc_rows(
 
         if rows > rows_threshold:
 
-            first_tick_query = db_mgt.querying_arithmetic_operator(where_filter, "MIN", table)
+            first_tick_query = db_mgt.querying_arithmetic_operator(
+                where_filter, "MIN", table
+            )
 
-            first_tick_fr_sqlite = await db_mgt.executing_query_with_return(first_tick_query)
+            first_tick_fr_sqlite = await db_mgt.executing_query_with_return(
+                first_tick_query
+            )
 
             if where_filter == "tick":
                 first_tick = first_tick_fr_sqlite[0]["MIN (tick)"]
@@ -43,12 +49,12 @@ async def count_and_delete_ohlc_rows(
                 first_tick = first_tick_fr_sqlite[0]["MIN (id)"]
 
             await db_mgt.deleting_row(
-                table, 
-                database, 
-                where_filter, 
-                "=", 
+                table,
+                database,
+                where_filter,
+                "=",
                 first_tick,
-                )
+            )
 
     except Exception as error:
         error_handling.parse_error_message(error)

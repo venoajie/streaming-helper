@@ -92,10 +92,9 @@ async def reconciling_size(
             client_redis,
             order_allowed_channel,
             initial_data_order_allowed,
-        )        
-        
-        connection_url = end_point_params_template.basic_https()
+        )
 
+        connection_url = end_point_params_template.basic_https()
 
         while True:
 
@@ -132,28 +131,36 @@ async def reconciling_size(
                         for currency_lower in transaction_currency:
 
                             archive_db_table = f"my_trades_all_{currency_lower}_json"
-                            
-                            transaction_log_end_point= end_point_params_template.get_transaction_log_end_point()        
 
-                            transaction_log_params = end_point_params_template.get_transaction_log_params(
-                                currency_lower,
-                                one_day_ago,
-                                1000,
-                                "trade",
+                            transaction_log_end_point = (
+                                end_point_params_template.get_transaction_log_end_point()
+                            )
+
+                            transaction_log_params = (
+                                end_point_params_template.get_transaction_log_params(
+                                    currency_lower,
+                                    one_day_ago,
+                                    1000,
+                                    "trade",
                                 )
-                            
+                            )
+
                             transaction_log_initial = await connector.get_connected(
                                 connection_url,
                                 transaction_log_end_point,
                                 client_id,
                                 client_secret,
                                 transaction_log_params,
-                                )
-                            
+                            )
+
                             transaction_log_result = transaction_log_initial["result"]
-                            
-                            transaction_log = [] if not transaction_log_result else transaction_log_result["logs"]
-                            
+
+                            transaction_log = (
+                                []
+                                if not transaction_log_result
+                                else transaction_log_result["logs"]
+                            )
+
                             await starter.distributing_transaction_log_from_exchange(
                                 archive_db_table,
                                 transaction_log,
@@ -517,27 +524,33 @@ async def inserting_transaction_log_data(
 
             min_timestamp = min(my_trades_currency_with_blanks_user_seq) - 100000
 
-            transaction_log_end_point= end_point_params_template.get_transaction_log_end_point()        
+            transaction_log_end_point = (
+                end_point_params_template.get_transaction_log_end_point()
+            )
 
-            transaction_log_params = end_point_params_template.get_transaction_log_params(
-                currency,
-                min_timestamp,
-                100,
-                "trade",
+            transaction_log_params = (
+                end_point_params_template.get_transaction_log_params(
+                    currency,
+                    min_timestamp,
+                    100,
+                    "trade",
                 )
-            
+            )
+
             transaction_log_initial = await connector.get_connected(
                 connection_url,
                 transaction_log_end_point,
                 client_id,
                 client_secret,
                 transaction_log_params,
-                )
-            
+            )
+
             transaction_log_result = transaction_log_initial["result"]
-            
-            transaction_log = [] if not transaction_log_result else transaction_log_result["logs"]
-            
+
+            transaction_log = (
+                [] if not transaction_log_result else transaction_log_result["logs"]
+            )
+
             where_filter = f"trade_id"
 
             log.debug(

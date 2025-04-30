@@ -10,6 +10,7 @@ from loguru import logger as log
 from streaming_helper.db_management import sqlite_management as db_mgt
 from streaming_helper.utilities import string_modification as str_mod
 
+
 def get_sub_account_size_per_instrument(
     instrument_name: str,
     sub_account: list,
