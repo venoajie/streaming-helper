@@ -103,6 +103,8 @@ async def processing_orders(
                     data = params["data"]
 
                     message_channel = params["channel"]
+                    
+                    log.warning(message_channel)
 
                     if my_trade_receiving_channel in message_channel:
 
