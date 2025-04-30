@@ -143,7 +143,7 @@ def get_user_trades_by_instrument_and_time_params(
 
     return {
         "count": count,
-        "end_timestamp": end_timestamp,
+        "end_timestamp": now_unix,
         "instrument_name": instrument_name,
         "start_timestamp": start_timestamp,
     }
@@ -287,11 +287,11 @@ def send_limit_order_params(
 
 
 def cancel_all_orders() -> str:
-    return f"cancel_all"
+    return f"private/cancel_all"
 
 
 def cancel_order() -> str:
-    return f"cancel"
+    return f"private/cancel"
 
 
 def get_cancel_order_params(

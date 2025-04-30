@@ -469,6 +469,8 @@ async def cancel_by_order_id(
     result = await connector.get_connected(
         connection_url, cancel_end_point, client_id, client_secret, cancel_params
     )
+    
+    log.warning(result)
 
     try:
         if (result["error"]["message"]) == "not_open_order":

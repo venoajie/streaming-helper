@@ -191,19 +191,13 @@ async def processing_orders(
 
                         else:
 
-                            log.debug(data)
-                            log.error("OTO" not in data["order_id"])
-                            log.debug(data["order_id"])
-
                             if "OTO" not in data["order_id"]:
 
                                 label = data["label"]
 
                                 order_id = data["order_id"]
                                 order_state = data["order_state"]
-                                
-                                log.error(label == "" or label == '')
-
+                             
                                 # no label
                                 if label == "" or label == '':
 
@@ -408,6 +402,10 @@ async def cancelling_and_relabelling(
 ) -> None:
 
     log.debug(f"label {label} order_state {order_state} order {order}")
+    
+    log.debug(order["order_id"])
+    
+    log.error(label == "" or label == '')
 
     # no label
     if label == "" or label == '':
@@ -415,6 +413,8 @@ async def cancelling_and_relabelling(
         # log.info(label == "")
 
         if "open" in order_state or "untriggered" in order_state:
+            
+            log.error("OTO" not in order["order_id"])
 
             if "OTO" not in order["order_id"]:
 
