@@ -179,7 +179,8 @@ async def processing_orders(
                         if "oto_order_ids" in data:
 
                             await saving_oto_order(
-                                private_data,
+                                client_id,
+                                client_secret,
                                 non_checked_strategies,
                                 [data],
                                 order_db_table,
@@ -201,7 +202,8 @@ async def processing_orders(
                                 if label == "":
 
                                     await cancelling_and_relabelling(
-                                        private_data,
+                                        client_id,
+                                        client_secret,
                                         non_checked_strategies,
                                         order_db_table,
                                         data,
@@ -387,7 +389,8 @@ async def if_order_is_true(
 
 
 async def cancelling_and_relabelling(
-    private_data,
+    client_id: str,
+    client_secret: str,
     non_checked_strategies,
     order_db_table,
     order,
@@ -415,7 +418,8 @@ async def cancelling_and_relabelling(
                 )
 
                 await cancel_order.cancel_by_order_id(
-                    private_data,
+                    client_id,
+                    client_secret,
                     order_db_table,
                     order_id,
                 )
@@ -424,7 +428,8 @@ async def cancelling_and_relabelling(
             # log.warning (f"order_attributes {order_attributes}")
 
             await if_order_is_true(
-                private_data,
+                client_id,
+                client_secret,
                 non_checked_strategies,
                 order_attributes,
                 ordered,
@@ -811,7 +816,6 @@ async def updating_sub_account(
 
     await redis_client.publishing_result(
         client_redis,
-        sub_account_cached_channel,
         message_byte_data,
     )
 

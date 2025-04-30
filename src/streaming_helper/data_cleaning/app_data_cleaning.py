@@ -14,7 +14,7 @@ from streaming_helper.channel_management import get_published_messages
 from streaming_helper.channel_management.deribit import subscribing_to_channels
 from streaming_helper.data_cleaning import managing_closed_transactions, reconciling_db
 from streaming_helper.db_management import redis_client, sqlite_management as db_mgt
-from streaming_helper.transaction_management.deribit import starter
+from streaming_helper.data_announcer.deribit import starter
 from streaming_helper.utilities import (
     string_modification as str_mod,
     error_handling,
@@ -90,7 +90,6 @@ async def reconciling_size(
 
         await redis_client.publishing_result(
             client_redis,
-            order_allowed_channel,
             initial_data_order_allowed,
         )
 
@@ -316,7 +315,6 @@ async def allowing_order_for_instrument_not_in_sub_account(
 
     await redis_client.publishing_result(
         client_redis,
-        order_allowed_channel,
         result,
     )
 
@@ -394,7 +392,6 @@ async def rechecking_based_on_sub_account(
 
         await redis_client.publishing_result(
             client_redis,
-            order_allowed_channel,
             result,
         )
 
@@ -472,7 +469,6 @@ async def rechecking_based_on_data_in_sqlite(
 
     await redis_client.publishing_result(
         client_redis,
-        order_allowed_channel,
         result,
     )
 
