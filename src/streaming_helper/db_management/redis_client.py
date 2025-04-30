@@ -159,12 +159,8 @@ async def publishing_result(
     """ """
 
     try:
-        
+
         channel = message["params"]["channel"]
-        
-        from loguru import logger as log
-        
-        log.error(channel)
 
         # publishing message
         await client_redis.publish(

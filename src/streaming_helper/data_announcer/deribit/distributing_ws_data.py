@@ -204,7 +204,6 @@ async def caching_distributing_data(
 
                             await redis_client.publishing_result(
                                 pipe,
-                                my_trades_channel,
                                 result,
                             )
 
@@ -301,7 +300,6 @@ async def updating_portfolio(
 
     await redis_client.publishing_result(
         pipe,
-        portfolio_channel,
         result,
     )
 
@@ -412,7 +410,6 @@ async def trades_in_message_channel(
 
     await redis_client.publishing_result(
         pipe,
-        my_trade_receiving_channel,
         result,
     )
 
@@ -453,7 +450,6 @@ async def order_in_message_channel(
 
     await redis_client.publishing_result(
         pipe,
-        order_update_channel,
         result,
     )
 
@@ -518,7 +514,6 @@ async def incremental_ticker_in_message_channel(
 
     await redis_client.publishing_result(
         pipe,
-        ticker_cached_channel,
         result,
     )
     if "PERPETUAL" in instrument_name_future:
@@ -559,7 +554,6 @@ async def chart_trades_in_message_channel(
 
     await redis_client.publishing_result(
         pipe,
-        chart_low_high_tick_channel,
         result,
     )
 
@@ -606,6 +600,5 @@ async def updating_sub_account(
 
     await redis_client.publishing_result(
         client_redis,
-        sub_account_cached_channel,
         message_byte_data,
     )

@@ -103,7 +103,7 @@ async def processing_orders(
                     data = params["data"]
 
                     message_channel = params["channel"]
-                    
+
                     log.warning(message_channel)
 
                     if my_trade_receiving_channel in message_channel:
@@ -192,6 +192,8 @@ async def processing_orders(
                         else:
 
                             log.debug(data)
+                            log.error("OTO" not in data["order_id"])
+                            log.debug(data["order_id"])
 
                             if "OTO" not in data["order_id"]:
 
@@ -199,9 +201,11 @@ async def processing_orders(
 
                                 order_id = data["order_id"]
                                 order_state = data["order_state"]
+                                
+                                log.error(label == "" or label == '')
 
                                 # no label
-                                if label == "":
+                                if label == "" or label == '':
 
                                     await cancelling_and_relabelling(
                                         client_id,
@@ -326,7 +330,6 @@ async def processing_orders(
 async def if_order_is_true(
     client_id: str,
     client_secret: str,
-    connection_url: str,
     non_checked_strategies: list,
     order: dict,
     ordered: list,
@@ -368,6 +371,8 @@ async def if_order_is_true(
                         end_point_params_template.send_limit_order_params(params)
                     )
 
+                    connection_url = end_point_params_template.basic_https()
+
                     send_limit_result = await connector.get_connected(
                         connection_url,
                         send_limit_order_end_point,
@@ -402,10 +407,10 @@ async def cancelling_and_relabelling(
     ordered,
 ) -> None:
 
-    # log.debug(f"label {label} order_state {order_state} order {order}")
+    log.debug(f"label {label} order_state {order_state} order {order}")
 
     # no label
-    if label == "":
+    if label == "" or label == '':
 
         # log.info(label == "")
 

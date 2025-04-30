@@ -488,7 +488,11 @@ def updating_order_allowed_cache(
 
         order_allowed = 0
 
-    [o for o in combined_order_allowed if instrument_name in o["instrument_name"]][0][
+    instrument_exist = [o for o in combined_order_allowed if instrument_name in o["instrument_name"]]
+    log.warning(f"combined_order_allowed {combined_order_allowed} {instrument_name} {order_allowed} {instrument_exist}")
+    if instrument_exist:
+        
+        [o for o in combined_order_allowed if instrument_name in o["instrument_name"]][0][
         "size_is_reconciled"
     ] = order_allowed
 
