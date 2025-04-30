@@ -43,7 +43,7 @@ async def combining_ticker_data(instruments_name: str) -> list:
             result_instrument = result_instrument[0]
 
         else:
-            
+
             connection_url = end_point.basic_https()
 
             endpoint_tickers = end_point.get_tickers_end_point(instrument_name)
@@ -53,7 +53,7 @@ async def combining_ticker_data(instruments_name: str) -> list:
                 endpoint_tickers,
             )
             log.debug(f"ticker {result_instrument}")
-            
+
         result.append(result_instrument)
 
     return result

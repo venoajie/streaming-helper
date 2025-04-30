@@ -56,10 +56,10 @@ class StreamingAccountData:
                 while True:
 
                     # Authenticate WebSocket Connection
-                    await self.ws_auth()
+                    await self.ws_auth(client_redis)
 
                     # Establish Heartbeat
-                    await self.establish_heartbeat()
+                    await self.establish_heartbeat(client_redis)
 
                     # Start Authentication Refresh Task
                     self.loop.create_task(self.ws_refresh_auth())
@@ -144,7 +144,7 @@ class StreamingAccountData:
                         elif "method" in list(message):
                             # Respond to Heartbeat Message
                             if message["method"] == "heartbeat":
-                                await self.heartbeat_response()
+                                await self.heartbeat_response(client_redis)
 
                         if "params" in list(message):
 
@@ -258,14 +258,16 @@ class StreamingAccountData:
                                     """
 
             except Exception as error:
-                
+
                 await error_handling.parse_error_message_with_redis(
-            client_redis,
-            error,
-        )
+                    client_redis,
+                    error,
+                )
 
-
-    async def establish_heartbeat(self) -> None:
+    async def establish_heartbeat(
+        self,
+        client_redis,
+    ) -> None:
         """
         reference: https://github.com/ElliotP123/crypto-exchange-code-samples/blob/master/deribit/websockets/dbt-ws-authenticated-example.py
 
@@ -284,11 +286,15 @@ class StreamingAccountData:
 
         except Exception as error:
 
-            await error_handling.parse_error_message(
+            await error_handling.parse_error_message_with_redis(
                 client_redis,
+                error,
             )
 
-    async def heartbeat_response(self) -> None:
+    async def heartbeat_response(
+        self,
+        client_redis,
+    ) -> None:
         """
         Sends the required WebSocket response to
         the Deribit API Heartbeat message.
@@ -306,9 +312,15 @@ class StreamingAccountData:
 
         except Exception as error:
 
-            error_handling.parse_error_message(error)
+            await error_handling.parse_error_message_with_redis(
+                client_redis,
+                error,
+            )
 
-    async def ws_auth(self) -> None:
+    async def ws_auth(
+        self,
+        client_redis,
+    ) -> None:
         """
         Requests DBT's `public/auth` to
         authenticate the WebSocket Connection.
@@ -329,7 +341,10 @@ class StreamingAccountData:
 
         except Exception as error:
 
-            error_handling.parse_error_message(error)
+            await error_handling.parse_error_message_with_redis(
+                client_redis,
+                error,
+            )
 
     async def ws_refresh_auth(self) -> None:
         """
@@ -377,7 +392,7 @@ class StreamingAccountData:
 
         await asyncio.sleep(sleep_time)
 
-        id = end_point_template.id_numbering(
+        id = end_point_params_template.id_numbering(
             operation,
             ws_channel,
         )

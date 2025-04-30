@@ -1,6 +1,6 @@
 [project]
 name = "streaming-helper"
-version = "0.1.34"
+version = "0.1.58"
 
 authors = [
   { name="ven.ajie", email="venoajie@gmail.com" },
@@ -12,8 +12,9 @@ dependencies =  [
   "aiohttp",
   "aioredis>=2.0.1",
   "aiosqlite==0.21.0",
-  "ccxt==4.4.74",
+  "ccxt==4.4.77",
   "dataclassy==1.0.1",
+  "numpy==2.2.5",
   "loguru==0.7.3",
   "orjson==3.10.15",
   "redis[hiredis]>=5.2.1",

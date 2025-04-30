@@ -6,6 +6,7 @@ import asyncio
 # installed
 import orjson
 
+
 async def get_redis_message(message_byte: bytes) -> dict:
     """ """
 
@@ -31,9 +32,13 @@ async def get_redis_message(message_byte: bytes) -> dict:
 
     except Exception as error:
 
-        from streaming_helper.utilities import error_handling
+        from messaging.telegram_bot import telegram_bot_sendtext
 
-        await error_handling.parse_error_message_with_redis(
-            client_redis,
-            error,
-    )
+        from utilities.system_tools import parse_error_message
+
+        parse_error_message(f"get_message redis {error}")
+
+        await telegram_bot_sendtext(
+            f"get_message redis - {error}",
+            "general_error",
+        )

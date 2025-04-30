@@ -165,9 +165,13 @@ async def updating_ohlc(
                             )
 
                             # catch up data through FIX
-                            result_all = await connector.get_connected(
+                            ohlc = await connector.get_connected(
                                 basic_https_connection_url,
                                 endpoint_ohlc,
+                            )
+
+                            result_all = str_mod.transform_nested_dict_to_list_ohlc(
+                                ohlc
                             )
 
                             await publishing_result(

@@ -4,6 +4,10 @@
 from streaming_helper.utilities import time_modification as time_mod
 
 
+def basic_https() -> str:
+    return f"https://www.deribit.com/api/v2/"
+
+
 def get_currencies_end_point() -> str:
     return f"public/get_currencies?"
 
@@ -14,10 +18,6 @@ def get_server_time_end_point() -> str:
 
 def get_instruments_end_point(currency) -> str:
     return f"public/get_instruments?currency={currency.upper()}"
-
-
-def basic_https() -> str:
-    return f"https://deribit.com/api/v2/"
 
 
 def get_tickers_end_point(instrument_name: str) -> str:
@@ -165,16 +165,15 @@ def get_transaction_log_params(
     return {
         "count": count,
         "currency": currency,
-        "end_timestamp": end_timestamp,
+        "end_timestamp": now_unix,
         "query": query,
         "start_timestamp": start_timestamp,
     }
 
 
-def send_orders_end_point(side: str) -> str:
+def send_orders_end_point(params: dict) -> str:
 
-    if side == "buy" or side == "sell":
-        return f"private/{side}"
+    return f"private/{params["side"]}"
 
 
 def send_orders_params(
@@ -296,14 +295,10 @@ def cancel_order() -> str:
 
 
 def get_cancel_order_params(
-    detailed: False,
+    order_id: str,
 ) -> dict:
 
-    now_unix = time_mod.get_now_unix_time()
-
-    return {
-        "detailed": detailed,
-    }
+    return {"order_id": order_id}
 
 
 def get_api_end_point(

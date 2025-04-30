@@ -34,7 +34,7 @@ async def initial_procedures(
         currencies: list = [o["spot"] for o in tradable_config_app][0]
 
         basic_https_connection_url = end_point.basic_https()
-    
+
         endpoint_currencies = end_point.get_currencies_end_point()
 
         # get ALL traded currencies in deribit
