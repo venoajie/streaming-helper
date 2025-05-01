@@ -122,7 +122,6 @@ async def reconciling_size(
                         ]
                     )
 
-                    log.info(f"transaction_currency {transaction_currency}")
                     if transaction_currency:
 
                         one_day_ago = server_time - (one_minute * 60 * 24 * 1)
@@ -138,12 +137,12 @@ async def reconciling_size(
                             transaction_log_params = (
                                 end_point_params_template.get_transaction_log_params(
                                     currency_lower,
-                                    one_day_ago,
+                                    one_day_ago*5,
                                     1000,
                                     "trade",
                                 )
                             )
-
+                            
                             transaction_log_initial = await connector.get_connected(
                                 connection_url,
                                 transaction_log_end_point,
@@ -152,12 +151,12 @@ async def reconciling_size(
                                 transaction_log_params,
                             )
 
-                            transaction_log_result = transaction_log_initial["result"]
+                            log.info(f" transaction_log {transaction_log_initial}")
 
                             transaction_log = (
                                 []
-                                if not transaction_log_result
-                                else transaction_log_result["logs"]
+                                if not transaction_log_initial
+                                else transaction_log_initial["result"]["logs"]
                             )
 
                             await starter.distributing_transaction_log_from_exchange(
