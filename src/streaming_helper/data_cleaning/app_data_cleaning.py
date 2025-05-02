@@ -123,8 +123,12 @@ async def reconciling_size(
                     )
 
                     if transaction_currency:
+                        
+                        one_day = (one_minute * 60 * 24 * 1)
 
-                        one_day_ago = server_time - (one_minute * 60 * 24 * 1)
+                        one_day_ago = server_time - one_day
+                        
+                        five_day_ago = server_time - (one_day*5)
 
                         for currency_lower in transaction_currency:
 
@@ -137,7 +141,7 @@ async def reconciling_size(
                             transaction_log_params = (
                                 end_point_params_template.get_transaction_log_params(
                                     currency_lower,
-                                    one_day_ago*5,
+                                    five_day_ago,
                                     1000,
                                     "trade",
                                 )
@@ -228,7 +232,10 @@ async def reconciling_size(
 
             except Exception as error:
 
-                system_tools.parse_error_message(error)
+                await error_handling.parse_error_message_with_redis(
+                    client_redis,
+                    error,
+                    )
 
                 continue
 
@@ -564,33 +571,32 @@ async def inserting_transaction_log_data(
                 side = transaction["side"]
                 timestamp = int(transaction["timestamp"])
                 position = transaction["position"]
-
-                await db_mgt.update_status_data(
-                    archive_db_table, "user_seq", where_filter, trade_id, user_seq, "="
-                )
-
-                await db_mgt.update_status_data(
-                    archive_db_table, "side", where_filter, trade_id, side, "="
-                )
-
-                await db_mgt.update_status_data(
-                    archive_db_table,
-                    "timestamp",
-                    where_filter,
-                    trade_id,
-                    timestamp,
-                    "=",
-                )
-
-                await db_mgt.update_status_data(
-                    archive_db_table,
-                    "position",
-                    where_filter,
-                    trade_id,
-                    position,
-                    "=",
-                )
-
+                
+                components = ["user_seq", "side", "timestamp", "position"]
+                
+                for component in components:    
+                    
+                    if component == "user_seq":
+                        sub_component = user_seq
+                    
+                    elif component == "side":
+                        sub_component = side
+                    
+                    elif component == "timestamp":
+                        sub_component = timestamp
+                    
+                    elif component == "position":
+                        sub_component = position
+                    
+                    await db_mgt.update_status_data(
+                        archive_db_table, 
+                        component, 
+                        where_filter,
+                        trade_id, 
+                        sub_component, 
+                        "=",
+                        )
+                    
 
 async def labelling_blank_labels(
     instrument_name: str,

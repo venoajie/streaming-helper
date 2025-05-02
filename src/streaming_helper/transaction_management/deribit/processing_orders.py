@@ -719,7 +719,7 @@ async def saving_oto_order(
 
     open_orders_end_point = end_point_params_template.get_open_orders_end_point()
 
-    open_orders_params = end_point_params_template.send_limit_order_params(kind, type)
+    open_orders_params = end_point_params_template.get_open_orders_params(kind, type)
 
     connection_url = end_point_params_template.basic_https()
 

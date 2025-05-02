@@ -108,6 +108,12 @@ async def insert_tables(
                     insert_table_json = f"""INSERT OR IGNORE INTO {table_name} (data) VALUES (json ('{(params)}'));"""
                     await db.execute(insert_table_json)
 
+    #except sqlite3.IntegrityError as error:
+    #    pass
+    
+    #except sqlite3.OperationalError as error:
+    #    pass
+
     except Exception as error:
 
         await error_handling.parse_error_message_with_redis(
@@ -228,6 +234,12 @@ async def deleting_row(
                 await db.execute(query_table_filter_none)
             else:
                 await db.execute(query_table, filter_val)
+
+    #except sqlite3.IntegrityError as error:
+    #    pass
+    
+    #except sqlite3.OperationalError as error:
+    #    pass
 
     except Exception as error:
         log.critical(f"deleting_row {query_table} {error}")
@@ -377,6 +389,12 @@ async def update_status_data(
             await db.execute("pragma journal_mode=wal;")
 
             await db.execute(query)
+
+    #except sqlite3.IntegrityError as error:
+    #    pass
+    
+    #except sqlite3.OperationalError as error:
+    #    pass
 
     except Exception as error:
         log.critical(f" ERROR {error}")
