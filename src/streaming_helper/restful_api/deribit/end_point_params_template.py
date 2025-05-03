@@ -11,7 +11,7 @@ from streaming_helper.utilities import time_modification as time_mod
 from streaming_helper.restful_api import connector
 
 
-def basic_https() -> str:
+def get_basic_https() -> str:
     return f"https://www.deribit.com/api/v2/"
 
 
@@ -119,6 +119,15 @@ def get_subaccounts_details_params(
         "with_open_orders": with_open_orders,
     }
 
+def get_end_point_based_on_side(side: str) -> str:
+
+    if side == "buy":
+        return "private/buy"
+
+    if side == "sell":
+        return "private/sell"
+
+
 
 @dataclass(unsafe_hash=True, slots=True)
 class SendApiRequest:
@@ -127,12 +136,34 @@ class SendApiRequest:
     client_id: str
     client_secret: str
     
+    
+    async def get_open_orders(
+        self,
+        kind: str,
+        type: str,  
+        ):
+
+        result = await connector.get_connected(
+            get_get_basic_https(),
+            get_open_orders_end_point(),
+            self.client_id,
+            self.client_secret,
+            get_open_orders_params(
+                kind, 
+                type,
+                )
+        ) 
+
+        return result
+
+    
     async def get_subaccounts(
     self,
-    with_portfolio: bool = True) -> list:
+    with_portfolio: bool = True
+    ) -> list:
     
         sub_account = await connector.get_connected(
-        basic_https(),
+        get_get_basic_https(),
         get_subaccounts_end_point(),
         self.client_id,
         self.client_secret,
@@ -144,7 +175,8 @@ class SendApiRequest:
     async def get_subaccounts_details(
     self,
     currency: str,
-    with_open_orders: bool = True) -> list:
+    with_open_orders: bool = True
+    ) -> list:
     
         """
 
@@ -259,7 +291,7 @@ class SendApiRequest:
         """
 
         sub_account = await connector.get_connected(
-        basic_https(),
+        get_get_basic_https(),
         get_subaccounts_details_end_point(),
         self.client_id,
         self.client_secret,
@@ -285,23 +317,19 @@ class SendApiRequest:
 
         """
 
-        now_unix = time_mod.get_now_unix_time()
 
-        # Set endpoint
-        endpoint: str = f"private/get_transaction_log"
-        params = {
-            "count": count,
-            "currency": currency.upper(),
-            "end_timestamp": now_unix,
-            "query": query,
-            "start_timestamp": start_timestamp,
-        }
+        result_transaction_log_to_result = await connector.get_connected(
+        get_get_basic_https(),
+        get_transaction_log_end_point(),
+        self.client_id,
+        self.client_secret,
+        get_subaccounts_details_params(
+        currency,
+        start_timestamp,
+        count,
+        query,
+        ))
 
-        result_transaction_log_to_result = await private_connection(
-            self.sub_account_id,
-            endpoint=endpoint,
-            params=params,
-        )
 
         try:
             result = result_transaction_log_to_result["result"]
@@ -311,23 +339,28 @@ class SendApiRequest:
         except:
 
             error = result_transaction_log_to_result["error"]
+            
             message = error["message"]
-            await tlgrm.telegram_bot_sendtext(
-                f"transaction_log message: {message}, (params: {params})"
-            )
+            
+            return message
 
-    async def get_cancel_order_all(self):
+    async def get_cancel_order_all(
+        self,
+        detailed: bool = False
+        ):
 
         # Set endpoint
         endpoint: str = "private/cancel_all"
 
         params = {"detailed": False}
 
-        result = await private_connection(
-            self.sub_account_id,
-            endpoint=endpoint,
-            params=params,
-        )
+
+        result = await connector.get_connected(
+        get_get_basic_https(),
+        cancel_all_orders_end_point(),
+        self.client_id,
+        self.client_secret,
+        cancel_all_orders_params(detailed))
 
         return result
 
@@ -337,15 +370,13 @@ class SendApiRequest:
         order_id: str,
     ) -> None:
         # Set endpoint
-        endpoint: str = "private/cancel"
 
-        params = {"order_id": order_id}
-
-        result = await private_connection(
-            self.sub_account_id,
-            endpoint=endpoint,
-            params=params,
-        )
+        result = await connector.get_connected(
+        get_get_basic_https(),
+        cancel_order_end_point(),
+        self.client_id,
+        self.client_secret,
+        get_cancel_order_params(order_id))
 
         return result
 
@@ -688,11 +719,14 @@ def send_limit_order_params(
     return order_result
 
 
-def cancel_all_orders() -> str:
+def cancel_all_orders_end_point() -> str:
     return f"private/cancel_all"
 
+def cancel_all_orders_params() -> dict:
+    return {"detailed": False}
 
-def cancel_order() -> str:
+
+def cancel_order_end_point() -> str:
     return f"private/cancel"
 
 
