@@ -87,6 +87,10 @@ async def reconciling_size(
         sub_account_cached = initial_data_subaccount["params"]["data"]
 
         positions_cached = sub_account_cached["positions_cached"]
+        
+        log.error(f"combined_order_allowed {combined_order_allowed}")
+        log.warning(f"sub_account_cached {sub_account_cached}")
+        log.debug(f"positions_cached {positions_cached}")
 
         await redis_client.publishing_result(
             client_redis,
@@ -94,7 +98,13 @@ async def reconciling_size(
         )
 
         connection_url = end_point_params_template.basic_https()
+        
+        query_variables = f"instrument_name, label, amount_dir as amount, trade_id, timestamp"
 
+        transaction_log_end_point = (
+            end_point_params_template.get_transaction_log_end_point()
+        )
+                
         while True:
 
             try:
@@ -108,65 +118,98 @@ async def reconciling_size(
                 if order_allowed_channel in message_channel:
 
                     not_allowed_instruments = [
-                        o
+                        o["instrument_name"]
                         for o in combined_order_allowed
                         if o["size_is_reconciled"] == 0
                     ]
-
+                    
                     log.info(f"not_allowed_instruments {not_allowed_instruments}")
 
-                    transaction_currency = str_mod.remove_redundant_elements(
-                        [
-                            str_mod.extract_currency_from_text(o["instrument_name"])
-                            for o in not_allowed_instruments
-                        ]
-                    )
-
-                    if transaction_currency:
+                    if not_allowed_instruments:
                         
-                        one_day = (one_minute * 60 * 24 * 1)
-
-                        one_day_ago = server_time - one_day
-                        
-                        five_day_ago = server_time - (one_day*5)
-
-                        for currency_lower in transaction_currency:
-
+                        for instrument_name in not_allowed_instruments:
+                            
+                            currency_lower = str_mod.extract_currency_from_text(instrument_name).lower()
+                            
                             archive_db_table = f"my_trades_all_{currency_lower}_json"
+                            
+                            query_trades_basic = f"SELECT {query_variables}  FROM  {archive_db_table}"
 
-                            transaction_log_end_point = (
-                                end_point_params_template.get_transaction_log_end_point()
+                            query_trades_active_where = (
+                                f"WHERE instrument_name LIKE '%{instrument_name}%' AND is_open = 1 ORDER BY timestamp DESC"
                             )
 
-                            transaction_log_params = (
-                                end_point_params_template.get_transaction_log_params(
-                                    currency_lower,
-                                    five_day_ago,
-                                    1000,
-                                    "trade",
-                                )
+                            query_trades_active_currency = (
+                                f"{query_trades_basic} {query_trades_active_where}"
+                            )
+
+                            my_trades_instrument_name = await db_mgt.executing_query_with_return(
+                                query_trades_active_currency
                             )
                             
-                            transaction_log_initial = await connector.get_connected(
-                                connection_url,
-                                transaction_log_end_point,
-                                client_id,
-                                client_secret,
-                                transaction_log_params,
+                            my_trades_and_sub_account_size_reconciled = (
+                                reconciling_db.is_my_trades_and_sub_account_size_reconciled_each_other(
+                                    instrument_name,
+                                    my_trades_instrument_name,
+                                    positions_cached,
+                                )
                             )
 
-                            log.info(f" transaction_log {transaction_log_initial}")
-
-                            transaction_log = (
-                                []
-                                if not transaction_log_initial
-                                else transaction_log_initial["result"]["logs"]
+                            log.critical(
+                                f"{instrument_name} {my_trades_and_sub_account_size_reconciled}"
                             )
+                            
+                            if not my_trades_and_sub_account_size_reconciled:                            
 
-                            await starter.distributing_transaction_log_from_exchange(
-                                archive_db_table,
-                                transaction_log,
-                            )
+                                query_trades_where = (
+                                    f"WHERE instrument_name LIKE '%{instrument_name}%' ORDER BY timestamp DESC LIMIT 2"
+                                )
+
+                                query_trades_instrument_name = (
+                                    f"{query_trades_basic} {query_trades_where}"
+                                )
+
+                                my_trades_instrument_name = await db_mgt.executing_query_with_return(
+                                    query_trades_instrument_name
+                                )
+                                
+                                log.info(f" my_trades_instrument_name {my_trades_instrument_name}")
+                                
+                                if my_trades_instrument_name:
+                                        
+                                    min_timestamp = min([o["timestamp"] for o in my_trades_instrument_name])
+                                    
+                                    transaction_log_params = (
+                                        end_point_params_template.get_transaction_log_params(
+                                            currency_lower,
+                                            min_timestamp,
+                                            1000,
+                                            "trade",
+                                        )
+                                    )
+                                    
+                                    transaction_log_initial = await connector.get_connected(
+                                        connection_url,
+                                        transaction_log_end_point,
+                                        client_id,
+                                        client_secret,
+                                        transaction_log_params,
+                                    )
+
+                                    log.info(f" transaction_log {transaction_log_initial}")
+
+                                    transaction_log = (
+                                        []
+                                        if not transaction_log_initial
+                                        else transaction_log_initial["result"]["logs"]
+                                    )
+                                    
+                                    if transaction_log:
+                                        
+                                        await starter.distributing_transaction_log_from_exchange(
+                                        archive_db_table,
+                                        transaction_log,
+                                    )
 
                 if ticker_cached_channel in message_channel:
 
@@ -417,8 +460,10 @@ async def rechecking_based_on_data_in_sqlite(
         currency_lower = currency.lower()
 
         archive_db_table = f"my_trades_all_{currency_lower}_json"
+        
+        query_variables = f"instrument_name, label, amount_dir as amount, timestamp, trade_id"
 
-        query_trades_active_basic = f"SELECT instrument_name, label, amount_dir as amount, trade_id  FROM  {archive_db_table}"
+        query_trades_active_basic = f"SELECT {query_variables}  FROM  {archive_db_table}"
 
         query_trades_active_where = (
             f"WHERE instrument_name LIKE '%{currency}%' AND is_open = 1"
