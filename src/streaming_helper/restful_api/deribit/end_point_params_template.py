@@ -18,6 +18,11 @@ def get_basic_https() -> str:
 def get_currencies_end_point() -> str:
     return f"public/get_currencies?"
 
+async def get_currencies() -> str:
+    return await connector.get_connected(
+            get_basic_https(),
+            get_currencies_end_point(),
+        )
 
 def get_server_time_end_point() -> str:
     return f"public/get_time?"
@@ -25,6 +30,12 @@ def get_server_time_end_point() -> str:
 
 def get_instruments_end_point(currency) -> str:
     return f"public/get_instruments?currency={currency.upper()}"
+
+async def get_instruments(currency) -> str:
+    return await connector.get_connected(
+            get_basic_https(),
+            get_instruments_end_point(currency),
+        )
 
 
 def get_tickers_end_point(instrument_name: str) -> str:
@@ -144,7 +155,7 @@ class SendApiRequest:
         ):
 
         result = await connector.get_connected(
-            get_get_basic_https(),
+            get_basic_https(),
             get_open_orders_end_point(),
             self.client_id,
             self.client_secret,
@@ -163,7 +174,7 @@ class SendApiRequest:
     ) -> list:
     
         sub_account = await connector.get_connected(
-        get_get_basic_https(),
+        get_basic_https(),
         get_subaccounts_end_point(),
         self.client_id,
         self.client_secret,
@@ -291,7 +302,7 @@ class SendApiRequest:
         """
 
         sub_account = await connector.get_connected(
-        get_get_basic_https(),
+        get_basic_https(),
         get_subaccounts_details_end_point(),
         self.client_id,
         self.client_secret,
@@ -319,11 +330,11 @@ class SendApiRequest:
 
 
         result_transaction_log_to_result = await connector.get_connected(
-        get_get_basic_https(),
+        get_basic_https(),
         get_transaction_log_end_point(),
         self.client_id,
         self.client_secret,
-        get_subaccounts_details_params(
+        get_transaction_log_params(
         currency,
         start_timestamp,
         count,
@@ -356,7 +367,7 @@ class SendApiRequest:
 
 
         result = await connector.get_connected(
-        get_get_basic_https(),
+        get_basic_https(),
         cancel_all_orders_end_point(),
         self.client_id,
         self.client_secret,
@@ -372,7 +383,7 @@ class SendApiRequest:
         # Set endpoint
 
         result = await connector.get_connected(
-        get_get_basic_https(),
+        get_basic_https(),
         cancel_order_end_point(),
         self.client_id,
         self.client_secret,

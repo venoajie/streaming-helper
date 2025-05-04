@@ -6,7 +6,6 @@ import asyncio
 
 # user defined formula
 from streaming_helper.restful_api.deribit import end_point_params_template as end_point
-from streaming_helper.restful_api import connector
 from streaming_helper.utilities.pickling import read_data
 from streaming_helper.utilities.string_modification import (
     remove_double_brackets_in_list,
@@ -60,7 +59,8 @@ def get_instruments_kind(
 
 
 async def get_futures_for_active_currencies(
-    active_currencies: list, settlement_periods: list
+    active_currencies: list, 
+    settlement_periods: list,
 ) -> list:
     """_summary_
 
@@ -71,14 +71,7 @@ async def get_futures_for_active_currencies(
     instruments_holder_place = []
     for currency in active_currencies:
 
-        connection_url = end_point.basic_https()
-
-        endpoint_instruments = end_point.get_instruments_end_point(currency)
-
-        result = await connector.get_connected(
-            connection_url,
-            endpoint_instruments,
-        )
+        result = await end_point.get_instruments(currency)
 
         future_instruments = get_instruments_kind(
             currency, settlement_periods, "future", result

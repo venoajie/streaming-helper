@@ -10,7 +10,6 @@ from loguru import logger as log
 # user defined formula
 
 from streaming_helper.restful_api.deribit import end_point_params_template
-from streaming_helper.restful_api import connector
 from streaming_helper.db_management import sqlite_management as db_mgt
 from streaming_helper.channel_management import get_published_messages
 from streaming_helper.channel_management.deribit import subscribing_to_channels
@@ -40,6 +39,9 @@ async def cancelling_orders(
 
         # connecting to redis pubsub
         pubsub: object = client_redis.pubsub()
+
+        #instantiate private connection
+        api_request: object = end_point_params_template.SendApiRequest(client_id,client_secret)
 
         # subscribe to channels
         await subscribing_to_channels.redis_channels(
@@ -107,23 +109,11 @@ async def cancelling_orders(
 
         my_trades_active_all = initial_data_my_trades_active["params"]["data"]
 
-        connection_url = end_point_params_template.basic_https()
-
         # get portfolio from exchg
-        subaccounts_end_point = end_point_params_template.get_subaccounts_end_point()
-
-        subaccounts_params = end_point_params_template.get_subaccounts_params()
-
-        portfolio_from_exchg = await connector.get_connected(
-            connection_url,
-            subaccounts_end_point,
-            client_id,
-            client_secret,
-            subaccounts_params,
-        )
+        portfolio_from_exchg = await api_request.get_subaccounts()
 
         initial_data_portfolio = starter.portfolio_combining(
-            portfolio_from_exchg["result"],
+            portfolio_from_exchg,
             portfolio_channel,
             result_template,
         )
@@ -268,8 +258,7 @@ async def cancelling_orders(
                             )
 
                             await cancelling_double_ids(
-                                client_redis,
-                                client_id,
+                                api_request,
                                 client_secret,
                                 order_db_table,
                                 orders_currency_strategy,
@@ -303,8 +292,7 @@ async def cancelling_orders(
 
                                         if cancel_allowed["cancel_allowed"]:
                                             await if_cancel_is_true(
-                                                client_id,
-                                                client_secret,
+                                                api_request,
                                                 order_db_table,
                                                 cancel_allowed,
                                             )
@@ -338,8 +326,7 @@ async def cancelling_orders(
 
                                         if cancel_allowed["cancel_allowed"]:
                                             await if_cancel_is_true(
-                                                client_id,
-                                                client_secret,
+                                                api_request,
                                                 order_db_table,
                                                 cancel_allowed,
                                             )
@@ -400,8 +387,7 @@ def get_index(ticker: dict) -> float:
 
 
 async def cancel_the_cancellables(
-    client_id: str,
-    client_secret: str,
+    api_request: object,
     order_db_table: str,
     currency: str,
     cancellable_strategies: list,
@@ -436,16 +422,14 @@ async def cancel_the_cancellables(
                 for order_id in open_orders_cancellables_id:
 
                     await cancel_by_order_id(
-                        client_id,
-                        client_secret,
+                        api_request,
                         order_db_table,
                         order_id,
                     )
 
 
 async def cancel_by_order_id(
-    client_id: str,
-    client_secret: str,
+    api_request: object,
     order_db_table: str,
     open_order_id: str,
 ) -> None:
@@ -460,15 +444,7 @@ async def cancel_by_order_id(
         open_order_id,
     )
 
-    connection_url = end_point_params_template.basic_https()
-
-    cancel_end_point = end_point_params_template.cancel_order()
-
-    cancel_params = end_point_params_template.get_cancel_order_params(open_order_id)
-
-    result = await connector.get_connected(
-        connection_url, cancel_end_point, client_id, client_secret, cancel_params
-    )
+    result = await api_request.get_cancel_order_byOrderId(open_order_id)
     
     log.warning(result)
 
@@ -484,8 +460,7 @@ async def cancel_by_order_id(
 
 
 async def if_cancel_is_true(
-    client_id: str,
-    client_secret: str,
+    api_request: str,
     order_db_table: str,
     order: dict,
 ) -> None:
@@ -495,16 +470,14 @@ async def if_cancel_is_true(
 
         # get parameter orders
         await cancel_by_order_id(
-            client_id,
-            client_secret,
+            api_request,
             order_db_table,
             order["cancel_id"],
         )
 
 
 async def cancelling_double_ids(
-    client_id,
-    client_secret,
+    api_request,
     client_redis,
     order_db_table: str,
     orders_currency_strategy: list,
@@ -530,8 +503,7 @@ async def cancelling_double_ids(
                     log.critical(orders)
 
                     await cancel_by_order_id(
-                        client_id,
-                        client_secret,
+                        api_request,
                         order_db_table,
                         order["order_id"],
                     )

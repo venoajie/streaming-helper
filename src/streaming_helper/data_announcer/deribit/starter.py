@@ -9,7 +9,6 @@ from loguru import logger as log
 # user defined formulas
 from streaming_helper.db_management import sqlite_management as db_mgt
 from streaming_helper.restful_api.deribit import end_point_params_template as end_point
-from streaming_helper.restful_api import connector
 from streaming_helper.utilities import (
     error_handling,
     pickling,
@@ -33,15 +32,8 @@ async def initial_procedures(
         # get TRADABLE currencies
         currencies: list = [o["spot"] for o in tradable_config_app][0]
 
-        basic_https_connection_url = end_point.basic_https()
-
-        endpoint_currencies = end_point.get_currencies_end_point()
-
         # get ALL traded currencies in deribit
-        get_currencies_all = await connector.get_connected(
-            basic_https_connection_url,
-            endpoint_currencies,
-        )
+        get_currencies_all = await end_point.get_currencies()
 
         all_exc_currencies = [o["currency"] for o in get_currencies_all["result"]]
 
@@ -62,15 +54,9 @@ async def initial_procedures(
 
         for currency in all_exc_currencies:
 
-            get_instruments_end_point = end_point.get_instruments(currency)
-
-            endpoint_instruments = end_point.get_instruments_end_point(currency)
-
             # get ALL traded currencies in deribit
-            instruments = await connector.get_connected(
-                basic_https_connection_url,
-                endpoint_instruments,
-            )
+            instruments = await end_point.get_instruments(currency)
+
             my_path_instruments = system_tools.provide_path_for_file(
                 "instruments", currency
             )
@@ -80,28 +66,6 @@ async def initial_procedures(
                 instruments,
             )
 
-        for currency in currencies:
-
-            currency_lower = currency.lower()
-
-            archive_db_table = f"my_trades_all_{currency_lower}_json"
-
-            query_trades_active_basic = f"SELECT instrument_name, user_seq, timestamp, trade_id  FROM  {archive_db_table}"
-
-            query_trades_active_where = f"WHERE instrument_name LIKE '%{currency}%'"
-
-            query_trades = f"{query_trades_active_basic} {query_trades_active_where}"
-
-            my_trades_currency = await db_mgt.executing_query_with_return(query_trades)
-
-            if my_trades_currency == []:
-
-                await refill_db(
-                    private_data,
-                    archive_db_table,
-                    currency,
-                    five_days_ago,
-                )
 
     except Exception as error:
 
@@ -109,63 +73,6 @@ async def initial_procedures(
             client_redis,
             error,
         )
-
-
-async def refill_db(
-    private_data: object,
-    archive_db_table: str,
-    currency: str,
-    five_days_ago: int,
-) -> None:
-
-    transaction_log = await private_data.get_transaction_log(
-        currency,
-        five_days_ago,
-        1000,
-        "trade",
-    )
-
-    await distributing_transaction_log_from_exchange(
-        archive_db_table,
-        transaction_log,
-    )
-
-
-async def distributing_transaction_log_from_exchange(
-    archive_db_table: str,
-    transaction_log: list,
-) -> None:
-
-    log.warning(f"transaction_log {transaction_log}")
-
-    if transaction_log:
-
-        for transaction in transaction_log:
-            result = {}
-
-            if "sell" in transaction["side"]:
-                direction = "sell"
-
-            if "buy" in transaction["side"]:
-                direction = "buy"
-
-            result.update({"trade_id": transaction["trade_id"]})
-            result.update({"user_seq": transaction["user_seq"]})
-            result.update({"side": transaction["side"]})
-            result.update({"timestamp": transaction["timestamp"]})
-            result.update({"position": transaction["position"]})
-            result.update({"amount": transaction["amount"]})
-            result.update({"order_id": transaction["order_id"]})
-            result.update({"price": transaction["price"]})
-            result.update({"instrument_name": transaction["instrument_name"]})
-            result.update({"label": None})
-            result.update({"direction": direction})
-            result.update({"currency": transaction["currency"]})
-
-            await db_mgt.insert_tables(
-                archive_db_table,
-                result,
-            )
 
 
 def portfolio_combining(

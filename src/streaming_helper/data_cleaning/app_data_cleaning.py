@@ -7,9 +7,7 @@ import asyncio
 from loguru import logger as log
 
 # user defined formulas
-
 from streaming_helper.restful_api.deribit import end_point_params_template
-from streaming_helper.restful_api import connector
 from streaming_helper.channel_management import get_published_messages
 from streaming_helper.channel_management.deribit import subscribing_to_channels
 from streaming_helper.data_cleaning import managing_closed_transactions, reconciling_db
@@ -37,6 +35,9 @@ async def reconciling_size(
 
         # connecting to redis pubsub
         pubsub: object = client_redis.pubsub()
+
+        #instantiate api for private connection
+        api_request: object = end_point_params_template.SendApiRequest(client_id,client_secret)
 
         # get tradable strategies
         tradable_config_app = config_app["tradable"]
@@ -88,22 +89,12 @@ async def reconciling_size(
 
         positions_cached = sub_account_cached["positions_cached"]
         
-        log.error(f"combined_order_allowed {combined_order_allowed}")
-        log.warning(f"sub_account_cached {sub_account_cached}")
-        log.debug(f"positions_cached {positions_cached}")
-
         await redis_client.publishing_result(
             client_redis,
             initial_data_order_allowed,
         )
 
-        connection_url = end_point_params_template.basic_https()
-        
         query_variables = f"instrument_name, label, amount_dir as amount, trade_id, timestamp"
-
-        transaction_log_end_point = (
-            end_point_params_template.get_transaction_log_end_point()
-        )
                 
         while True:
 
@@ -178,38 +169,26 @@ async def reconciling_size(
                                 if my_trades_instrument_name:
                                         
                                     min_timestamp = min([o["timestamp"] for o in my_trades_instrument_name])
+                                
+                                else:
                                     
-                                    transaction_log_params = (
-                                        end_point_params_template.get_transaction_log_params(
-                                            currency_lower,
-                                            min_timestamp,
-                                            1000,
-                                            "trade",
-                                        )
-                                    )
-                                    
-                                    transaction_log_initial = await connector.get_connected(
-                                        connection_url,
-                                        transaction_log_end_point,
-                                        client_id,
-                                        client_secret,
-                                        transaction_log_params,
-                                    )
-
-                                    log.info(f" transaction_log {transaction_log_initial}")
-
-                                    transaction_log = (
-                                        []
-                                        if not transaction_log_initial
-                                        else transaction_log_initial["result"]["logs"]
-                                    )
-                                    
-                                    if transaction_log:
+                                    one_day_ago = server_time - (one_minute * 60 * 24 * 100)
                                         
-                                        await starter.distributing_transaction_log_from_exchange(
+                                    min_timestamp = one_day_ago
+                                
+                                transaction_log = await api_request.get_transaction_log(
+                                        currency_lower,
+                                        min_timestamp,
+                                        1000,
+                                        "trade",)
+                                
+                                if transaction_log:
+                                    
+                                    await distributing_transaction_log_from_exchange(
                                         archive_db_table,
+                                        instrument_name,
                                         transaction_log,
-                                    )
+                                        )
 
                 if ticker_cached_channel in message_channel:
 
@@ -245,11 +224,9 @@ async def reconciling_size(
                         archive_db_table = f"my_trades_all_{currency_lower}_json"
 
                         await inserting_transaction_log_data(
-                            client_id,
-                            client_secret,
+                            api_request,
                             archive_db_table,
                             currency,
-                            connection_url,
                         )
 
                     if sub_account_cached_channel in message_channel:
@@ -540,7 +517,7 @@ def updating_order_allowed_cache(
         order_allowed = 0
 
     instrument_exist = [o for o in combined_order_allowed if instrument_name in o["instrument_name"]]
-    log.warning(f"combined_order_allowed {combined_order_allowed} {instrument_name} {order_allowed} {instrument_exist}")
+
     if instrument_exist:
         
         [o for o in combined_order_allowed if instrument_name in o["instrument_name"]][0][
@@ -549,11 +526,9 @@ def updating_order_allowed_cache(
 
 
 async def inserting_transaction_log_data(
-    client_id: str,
-    client_secret: str,
+    api_request: object,
     archive_db_table: str,
     currency: str,
-    connection_url: str,
 ) -> None:
     """ """
 
@@ -575,32 +550,11 @@ async def inserting_transaction_log_data(
 
             min_timestamp = min(my_trades_currency_with_blanks_user_seq) - 100000
 
-            transaction_log_end_point = (
-                end_point_params_template.get_transaction_log_end_point()
-            )
-
-            transaction_log_params = (
-                end_point_params_template.get_transaction_log_params(
-                    currency,
-                    min_timestamp,
-                    100,
-                    "trade",
-                )
-            )
-
-            transaction_log_initial = await connector.get_connected(
-                connection_url,
-                transaction_log_end_point,
-                client_id,
-                client_secret,
-                transaction_log_params,
-            )
-
-            transaction_log_result = transaction_log_initial["result"]
-
-            transaction_log = (
-                [] if not transaction_log_result else transaction_log_result["logs"]
-            )
+            transaction_log = await api_request.get_transaction_log(
+                                            currency,
+                                            min_timestamp,
+                                            100,
+                                            "trade",)
 
             where_filter = f"trade_id"
 
@@ -609,39 +563,41 @@ async def inserting_transaction_log_data(
             )
             log.warning(f"transaction_log {transaction_log}")
             log.info([o for o in my_trades_currency if o["user_seq"] is None])
-            for transaction in transaction_log:
+            
+            if transaction_log:
+                for transaction in transaction_log:
 
-                trade_id = transaction["trade_id"]
-                user_seq = int(transaction["user_seq"])
-                side = transaction["side"]
-                timestamp = int(transaction["timestamp"])
-                position = transaction["position"]
-                
-                components = ["user_seq", "side", "timestamp", "position"]
-                
-                for component in components:    
+                    trade_id = transaction["trade_id"]
+                    user_seq = int(transaction["user_seq"])
+                    side = transaction["side"]
+                    timestamp = int(transaction["timestamp"])
+                    position = transaction["position"]
                     
-                    if component == "user_seq":
-                        sub_component = user_seq
+                    components = ["user_seq", "side", "timestamp", "position"]
                     
-                    elif component == "side":
-                        sub_component = side
-                    
-                    elif component == "timestamp":
-                        sub_component = timestamp
-                    
-                    elif component == "position":
-                        sub_component = position
-                    
-                    await db_mgt.update_status_data(
-                        archive_db_table, 
-                        component, 
-                        where_filter,
-                        trade_id, 
-                        sub_component, 
-                        "=",
-                        )
-                    
+                    for component in components:    
+                        
+                        if component == "user_seq":
+                            sub_component = user_seq
+                        
+                        elif component == "side":
+                            sub_component = side
+                        
+                        elif component == "timestamp":
+                            sub_component = timestamp
+                        
+                        elif component == "position":
+                            sub_component = position
+                        
+                        await db_mgt.update_status_data(
+                            archive_db_table, 
+                            component, 
+                            where_filter,
+                            trade_id, 
+                            sub_component, 
+                            "=",
+                            )
+                        
 
 async def labelling_blank_labels(
     instrument_name: str,
@@ -721,3 +677,54 @@ def get_custom_label(transaction: list) -> str:
             last_update = transaction["creation_timestamp"]
 
     return f"custom{side_label.title()}-open-{last_update}"
+
+
+async def distributing_transaction_log_from_exchange(
+    archive_db_table: str,
+    instrument_name: str,
+    transaction_log: list,
+) -> None:
+
+    if transaction_log and "too_many_requests" not in transaction_log:
+
+        for transaction in transaction_log:
+            
+            transaction_instrument_name = transaction["instrument_name"]
+            
+            transaction_currency = transaction["currency"]
+
+            transaction_currency_usd = (f"{transaction_currency.upper()}_USD")
+            
+            log.info(f"transaction_currency_usd {transaction_currency_usd} {transaction_currency_usd not in transaction_instrument_name}")
+            
+            if (
+                instrument_name in transaction_instrument_name 
+                and transaction_currency_usd not in transaction_instrument_name):
+                
+                result = {}
+
+                if "sell" in transaction["side"]:
+                    direction = "sell"
+
+                if "buy" in transaction["side"]:
+                    direction = "buy"
+
+                result.update({"trade_id": transaction["trade_id"]})
+                result.update({"user_seq": transaction["user_seq"]})
+                result.update({"side": transaction["side"]})
+                result.update({"timestamp": transaction["timestamp"]})
+                result.update({"position": transaction["position"]})
+                result.update({"amount": transaction["amount"]})
+                result.update({"order_id": transaction["order_id"]})
+                result.update({"price": transaction["price"]})
+                result.update({"instrument_name": transaction_instrument_name})
+                result.update({"label": None})
+                result.update({"direction": direction})
+                result.update({"currency": transaction_currency})
+
+                await db_mgt.insert_tables(
+                    archive_db_table,
+                    result,
+                )
+
+

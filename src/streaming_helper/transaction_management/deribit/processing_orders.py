@@ -9,7 +9,6 @@ from loguru import logger as log
 
 # user defined formula
 from streaming_helper.restful_api.deribit import end_point_params_template
-from streaming_helper.restful_api import connector
 from streaming_helper.db_management import redis_client, sqlite_management as db_mgt
 from streaming_helper.transaction_management.deribit import (
     cancelling_active_orders as cancel_order,
@@ -41,6 +40,9 @@ async def processing_orders(
 
         # connecting to redis pubsub
         pubsub: object = client_redis.pubsub()
+
+        #instantiate private connection
+        api_request: object = end_point_params_template.SendApiRequest(client_id,client_secret)
 
         # subscribe to channels
         await subscribing_to_channels.redis_channels(
@@ -82,12 +84,6 @@ async def processing_orders(
 
         ordered = []
 
-        connection_url = end_point_params_template.basic_https()
-
-        subaccounts_details_end_point = (
-            end_point_params_template.get_subaccounts_details_end_point()
-        )
-
         while not_cancel:
 
             try:
@@ -118,8 +114,7 @@ async def processing_orders(
                             archive_db_table = f"my_trades_all_{currency_lower}_json"
 
                             await cancel_order.cancel_the_cancellables(
-                                client_id,
-                                client_secret,
+                                api_request,
                                 order_db_table,
                                 currency_lower,
                                 cancellable_strategies,
@@ -133,24 +128,14 @@ async def processing_orders(
 
                             for currency in currencies:
 
-                                subaccounts_details_params = end_point_params_template.get_subaccounts_details_params(
-                                    currency
-                                )
-
-                                result = await connector.get_connected(
-                                    connection_url,
-                                    subaccounts_details_end_point,
-                                    client_id,
-                                    client_secret,
-                                    subaccounts_details_params,
-                                )
+                                result = await api_request.get_subaccounts_details(currency)
 
                                 await updating_sub_account(
                                     client_redis,
                                     orders_cached,
                                     positions_cached,
                                     query_trades,
-                                    result["result"],
+                                    result,
                                     sub_account_cached_channel,
                                     message_byte_data,
                                 )
@@ -163,9 +148,7 @@ async def processing_orders(
                         if data["order_allowed"]:
 
                             await if_order_is_true(
-                                client_id,
-                                client_secret,
-                                connection_url,
+                                api_request,
                                 non_checked_strategies,
                                 data,
                                 ordered,
@@ -181,8 +164,7 @@ async def processing_orders(
                         if "oto_order_ids" in data:
 
                             await saving_oto_order(
-                                client_id,
-                                client_secret,
+                                api_request,
                                 non_checked_strategies,
                                 [data],
                                 order_db_table,
@@ -202,8 +184,7 @@ async def processing_orders(
                                 if label == "" or label == '':
 
                                     await cancelling_and_relabelling(
-                                        client_id,
-                                        client_secret,
+                                        api_request,
                                         non_checked_strategies,
                                         order_db_table,
                                         data,
@@ -237,8 +218,7 @@ async def processing_orders(
                                             or order_state != "filled"
                                         ):
                                             await cancel_order.cancel_by_order_id(
-                                                client_id,
-                                                client_secret,
+                                                api_request,
                                                 order_db_table,
                                                 order_id,
                                             )
@@ -251,24 +231,14 @@ async def processing_orders(
 
                         for currency in currencies:
 
-                            subaccounts_details_params = end_point_params_template.get_subaccounts_details_params(
-                                currency
-                            )
-
-                            result = await connector.get_connected(
-                                connection_url,
-                                subaccounts_details_end_point,
-                                client_id,
-                                client_secret,
-                                subaccounts_details_params,
-                            )
+                            result = await api_request.get_subaccounts_details(currency)
 
                             await updating_sub_account(
                                 client_redis,
                                 orders_cached,
                                 positions_cached,
                                 query_trades,
-                                result["result"],
+                                result,
                                 sub_account_cached_channel,
                                 message_byte_data,
                             )
@@ -279,24 +249,14 @@ async def processing_orders(
                     ):
                         for currency in currencies:
 
-                            subaccounts_details_params = end_point_params_template.get_subaccounts_details_params(
-                                currency
-                            )
-
-                            result = await connector.get_connected(
-                                connection_url,
-                                subaccounts_details_end_point,
-                                client_id,
-                                client_secret,
-                                subaccounts_details_params,
-                            )
+                            result = await api_request.get_subaccounts_details(currency)
 
                             await updating_sub_account(
                                 client_redis,
                                 orders_cached,
                                 positions_cached,
                                 query_trades,
-                                result["result"],
+                                result,
                                 sub_account_cached_channel,
                                 message_byte_data,
                             )
@@ -322,8 +282,7 @@ async def processing_orders(
 
 
 async def if_order_is_true(
-    client_id: str,
-    client_secret: str,
+    api_request: object,
     non_checked_strategies: list,
     order: dict,
     ordered: list,
@@ -352,30 +311,14 @@ async def if_order_is_true(
             log.debug(f"label_has_order_id {label_has_order_id}")
 
             if label_has_order_id:
+                
                 ordered.remove(params)
 
             else:
+                
                 if ordered == []:
 
-                    send_limit_order_end_point = (
-                        end_point_params_template.send_orders_end_point(params)
-                    )
-
-                    send_limit_order_params = (
-                        end_point_params_template.send_limit_order_params(params)
-                    )
-
-                    connection_url = end_point_params_template.basic_https()
-
-                    send_limit_result = await connector.get_connected(
-                        connection_url,
-                        send_limit_order_end_point,
-                        client_id,
-                        client_secret,
-                        send_limit_order_params,
-                    )
-
-                    return send_limit_result
+                    return await api_request.send_limit_order(send_limit_order_params)
 
                 else:
                     ordered.append(params)
@@ -390,8 +333,7 @@ async def if_order_is_true(
 
 
 async def cancelling_and_relabelling(
-    client_id: str,
-    client_secret: str,
+    api_request: str,
     non_checked_strategies,
     order_db_table,
     order,
@@ -411,12 +353,14 @@ async def cancelling_and_relabelling(
     if label == "" or label == '':
 
         # log.info(label == "")
+        
+        order_id = order["order_id"]
 
         if "open" in order_state or "untriggered" in order_state:
             
-            log.error("OTO" not in order["order_id"])
+            log.error("OTO" not in order_id)
 
-            if "OTO" not in order["order_id"]:
+            if "OTO" not in order_id:
 
                 # log.error (f"order {order}")
                 await db_mgt.insert_tables(
@@ -425,18 +369,16 @@ async def cancelling_and_relabelling(
                 )
 
                 await cancel_order.cancel_by_order_id(
-                    client_id,
-                    client_secret,
+                    api_request,
                     order_db_table,
                     order_id,
-                )
+)
 
             order_attributes = labelling_unlabelled_order(order)
             # log.warning (f"order_attributes {order_attributes}")
 
             await if_order_is_true(
-                client_id,
-                client_secret,
+                api_request,
                 non_checked_strategies,
                 order_attributes,
                 ordered,
@@ -701,8 +643,7 @@ async def saving_traded_orders(
 
 
 async def saving_oto_order(
-    client_id: str,
-    client_secret: str,
+    api_request: object,
     non_checked_strategies: list,
     orders: list,
     order_db_table: str,
@@ -717,19 +658,7 @@ async def saving_oto_order(
     kind = "future"
     type = "trigger_all"
 
-    open_orders_end_point = end_point_params_template.get_open_orders_end_point()
-
-    open_orders_params = end_point_params_template.get_open_orders_params(kind, type)
-
-    connection_url = end_point_params_template.basic_https()
-
-    open_orders = await connector.get_connected(
-        connection_url,
-        open_orders_end_point,
-        client_id,
-        client_secret,
-        open_orders_params,
-    )
+    open_orders = await api_request.get_open_orders(kind, type)
 
     open_orders_from_exchange = open_orders["result"]
 
@@ -757,16 +686,10 @@ async def saving_oto_order(
                 transaction_main, transaction_secondary
             )
 
-            await cancel_order.cancel_by_order_id(
-                client_id,
-                client_secret,
-                order_db_table,
-                transaction_main["order_id"],
-            )
+            await api_request.get_cancel_order_byOrderId(transaction_main["order_id"])
 
             await if_order_is_true(
-                client_id,
-                client_secret,
+                api_request,
                 non_checked_strategies,
                 order_attributes,
                 ordered,
