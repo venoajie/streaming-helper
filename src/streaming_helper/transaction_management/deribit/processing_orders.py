@@ -100,8 +100,6 @@ async def processing_orders(
 
                     message_channel = params["channel"]
 
-                    log.warning(message_channel)
-
                     if my_trade_receiving_channel in message_channel:
 
                         log.critical(message_channel)
@@ -318,7 +316,7 @@ async def if_order_is_true(
                 
                 if ordered == []:
 
-                    return await api_request.send_limit_order(send_limit_order_params)
+                    return await api_request.send_limit_order(params)
 
                 else:
                     ordered.append(params)
@@ -660,48 +658,51 @@ async def saving_oto_order(
 
     open_orders = await api_request.get_open_orders(kind, type)
 
-    open_orders_from_exchange = open_orders["result"]
+    print(f"open_orders {open_orders}")
+    
+    if open_orders:
+        
 
-    transaction_secondary = [
-        o for o in open_orders_from_exchange if transaction_main_oto in o["order_id"]
-    ]
+        transaction_secondary = [
+            o for o in open_orders if transaction_main_oto in o["order_id"]
+        ]
 
-    if transaction_secondary:
+        if transaction_secondary:
 
-        transaction_secondary = transaction_secondary[0]
+            transaction_secondary = transaction_secondary[0]
 
-        # no label
-        if (
-            transaction_main["label"] == ""
-            and "open" in transaction_main["order_state"]
-        ):
+            # no label
+            if (
+                transaction_main["label"] == ""
+                and "open" in transaction_main["order_state"]
+            ):
 
-            # log.error (f"transaction_main {transaction_main}")
-            await db_mgt.insert_tables(
-                order_db_table,
-                transaction_main,
-            )
+                # log.error (f"transaction_main {transaction_main}")
+                await db_mgt.insert_tables(
+                    order_db_table,
+                    transaction_main,
+                )
 
-            order_attributes = labelling_unlabelled_order_oto(
-                transaction_main, transaction_secondary
-            )
+                order_attributes = labelling_unlabelled_order_oto(
+                    transaction_main, transaction_secondary
+                )
 
-            await api_request.get_cancel_order_byOrderId(transaction_main["order_id"])
+                await api_request.get_cancel_order_byOrderId(transaction_main["order_id"])
 
-            await if_order_is_true(
-                api_request,
-                non_checked_strategies,
-                order_attributes,
-                ordered,
-            )
+                await if_order_is_true(
+                    api_request,
+                    non_checked_strategies,
+                    order_attributes,
+                    ordered,
+                )
 
-        else:
+            else:
 
-            # log.error (f"transaction_main {transaction_main}")
-            await db_mgt.insert_tables(
-                order_db_table,
-                transaction_main,
-            )
+                # log.error (f"transaction_main {transaction_main}")
+                await db_mgt.insert_tables(
+                    order_db_table,
+                    transaction_main,
+                )
 
 
 async def updating_sub_account(

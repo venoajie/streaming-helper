@@ -11,7 +11,6 @@ asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 from streaming_helper.db_management import redis_client, sqlite_management as db_mgt
 from streaming_helper.restful_api.deribit import end_point_params_template as end_point
-from streaming_helper.restful_api import connector
 from streaming_helper.data_announcer.deribit import (
     get_instrument_summary,
     allocating_ohlc,
@@ -337,14 +336,7 @@ async def combining_ticker_data(instruments_name: str) -> list:
 
         else:
 
-            connection_url = end_point.basic_https()
-
-            endpoint_tickers = end_point.get_tickers_end_point(instrument_name)
-
-            result_instrument = await connector.get_connected(
-                connection_url,
-                endpoint_tickers,
-            )
+            result_instrument = await end_point.get_ticker(instrument_name)
 
         result.append(result_instrument)
 
@@ -511,7 +503,7 @@ async def incremental_ticker_in_message_channel(
 
     result["params"].update({"channel": ticker_cached_channel})
     result["params"].update({"data": pub_message})
-
+    
     await redis_client.publishing_result(
         pipe,
         result,

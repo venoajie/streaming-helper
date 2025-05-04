@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
+from streaming_helper.restful_api import connector
 
-def basic_https() -> str:
+def get_basic_https() -> str:
     return f"https://api.telegram.org/bot"
 
 
@@ -18,3 +19,19 @@ def message_end_point(
         + ("&parse_mode=HTML&text=")
         + str(bot_message)
     )
+
+
+async def send_message(
+    bot_token: str,
+    bot_chatID: str,
+    bot_message: str,
+)) -> None:
+    return await connector.get_connected(
+            get_basic_https(),
+            message_end_point(
+            bot_token,
+            bot_chatID,
+            bot_message),
+        )
+        
+        

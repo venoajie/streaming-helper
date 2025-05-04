@@ -38,6 +38,15 @@ async def get_instruments(currency) -> str:
         )
 
 
+async def get_ticker(instrument_name: str) -> dict:
+
+    result = await connector.get_connected(
+            get_basic_https(),
+            get_tickers_end_point(instrument_name),
+        )
+
+    return result["result"]
+
 def get_tickers_end_point(instrument_name: str) -> str:
 
     return f"public/ticker?instrument_name={instrument_name}"
@@ -302,14 +311,15 @@ class SendApiRequest:
         """
 
         sub_account = await connector.get_connected(
-        get_basic_https(),
-        get_subaccounts_details_end_point(),
-        self.client_id,
-        self.client_secret,
-        get_subaccounts_details_params(
-        currency,
-        with_open_orders,
-        ))
+            get_basic_https(),
+            get_subaccounts_details_end_point(),
+            self.client_id,
+            self.client_secret,
+            get_subaccounts_details_params(
+            currency,
+            with_open_orders,
+            )
+            )
 
         return sub_account["result"]
     
@@ -330,16 +340,17 @@ class SendApiRequest:
 
 
         result_transaction_log_to_result = await connector.get_connected(
-        get_basic_https(),
-        get_transaction_log_end_point(),
-        self.client_id,
-        self.client_secret,
-        get_transaction_log_params(
-        currency,
-        start_timestamp,
-        count,
-        query,
-        ))
+            get_basic_https(),
+            get_transaction_log_end_point(),
+            self.client_id,
+            self.client_secret,
+            get_transaction_log_params(
+            currency,
+            start_timestamp,
+            count,
+            query,
+            )
+            )
 
 
         try:
@@ -365,15 +376,12 @@ class SendApiRequest:
 
         params = {"detailed": False}
 
-
-        result = await connector.get_connected(
-        get_basic_https(),
-        cancel_all_orders_end_point(),
-        self.client_id,
-        self.client_secret,
-        cancel_all_orders_params(detailed))
-
-        return result
+        return await connector.get_connected(
+            get_basic_https(),
+            cancel_all_orders_end_point(),
+            self.client_id,
+            self.client_secret,
+            cancel_all_orders_params(detailed))
 
 
     async def get_cancel_order_byOrderId(
@@ -382,14 +390,12 @@ class SendApiRequest:
     ) -> None:
         # Set endpoint
 
-        result = await connector.get_connected(
-        get_basic_https(),
-        cancel_order_end_point(),
-        self.client_id,
-        self.client_secret,
-        get_cancel_order_params(order_id))
-
-        return result
+        return await connector.get_connected(
+            get_basic_https(),
+            cancel_order_end_point(),
+            self.client_id,
+            self.client_secret,
+            get_cancel_order_params(order_id))
 
 
     async def send_order(
@@ -410,48 +416,33 @@ class SendApiRequest:
         reject_post_only: bool = False,
     ) -> None:
 
-        params = {}
-
-        params.update({"instrument_name": instrument})
-        params.update({"amount": amount})
-        params.update({"label": label})
-        params.update({"instrument_name": instrument})
-        params.update({"type": type})
-
-        if trigger_price is not None:
-
-            params.update({"trigger": trigger})
-            params.update({"trigger_price": trigger_price})
-            params.update({"reduce_only": reduce_only})
-
-        if "market" not in type:
-            params.update({"price": price})
-            params.update({"post_only": post_only})
-            params.update({"reject_post_only": reject_post_only})
-
-        if otoco_config:
-            params.update({"otoco_config": otoco_config})
-
-            if linked_order_type is not None:
-                params.update({"linked_order_type": linked_order_type})
-            else:
-                params.update({"linked_order_type": "one_triggers_other"})
-
-            params.update({"trigger_fill_condition": "incremental"})
-
-            log.debug(f"params otoco_config {params}")
-
         result = None
 
         if side is not None:
 
             endpoint: str = get_end_point_based_on_side(side)
 
-            result = await private_connection(
-                self.sub_account_id,
-                endpoint=endpoint,
-                params=params,
-            )
+            result = await connector.get_connected(
+                get_basic_https(),
+                endpoint,
+                self.client_id,
+                self.client_secret,
+                send_orders_params(
+                    side,
+                    instrument,
+                    amount,
+                    label,
+                    price,
+                    type,
+                    otoco_config,
+                    linked_order_type,
+                    trigger_price,
+                    trigger,
+                    time_in_force,
+                    reduce_only,
+                    post_only,
+                    reject_post_only)
+                    )
 
         return result
 
@@ -466,11 +457,16 @@ class SendApiRequest:
 
         params = {"kind": kind, "type": type}
 
-        result_open_order = await private_connection(
-            self.sub_account_id,
-            endpoint=endpoint,
-            params=params,
-        )
+        result_open_order = await connector.get_connected(
+            get_basic_https(),
+            get_open_orders_end_point(),
+            self.client_id,
+            self.client_secret,
+            get_open_orders_params(
+                kind,
+                type,
+                )
+            )
 
         return result_open_order["result"]
 
@@ -481,7 +477,6 @@ class SendApiRequest:
         """ """
 
         # basic params
-        log.info(f"params {params}")
         side = params["side"]
         instrument = params["instrument_name"]
         label_numbered = params["label"]
@@ -534,8 +529,6 @@ class SendApiRequest:
                     trigger,
                 )
 
-        # log.warning(f"order_result {order_result}")
-
         if order_result != None and (
             "error" in order_result or "message" in order_result
         ):
@@ -548,13 +541,6 @@ class SendApiRequest:
             except:
                 data = message
 
-            await tlgrm.telegram_bot_sendtext(
-                f"message: {message}, \
-                                         data: {data}, \
-                                         (params: {params}"
-            )
-
-        log.warning(f"order_result {order_result}")
         return order_result
     
 def get_user_trades_by_currency_end_point() -> str:
@@ -575,7 +561,6 @@ def get_user_trades_by_currency_params(
 
 def get_user_trades_by_instrument_and_time_end_point() -> str:
     return f"private/get_user_trades_by_instrument_and_time"
-
 
 def get_user_trades_by_instrument_and_time_params(
     instrument_name: str,
