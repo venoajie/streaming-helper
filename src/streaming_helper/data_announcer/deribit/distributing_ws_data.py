@@ -21,6 +21,7 @@ from streaming_helper.utilities import (
     pickling,
     string_modification as str_mod,
     system_tools,
+    template,
 )
 
 
@@ -114,7 +115,7 @@ async def caching_distributing_data(
 
         query_trades = f"SELECT * FROM  v_trading_all_active"
 
-        result = str_mod.message_template()
+        result = template.redis_message_template()
 
         while True:
 

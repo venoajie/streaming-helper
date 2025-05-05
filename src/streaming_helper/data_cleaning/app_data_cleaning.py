@@ -18,6 +18,7 @@ from streaming_helper.utilities import (
     error_handling,
     system_tools,
     time_modification as time_mod,
+    template,
 )
 
 
@@ -76,7 +77,7 @@ async def reconciling_size(
 
         futures_instruments_name = [o for o in all_instruments_name if "-FS-" not in o]
 
-        result_template = str_mod.message_template()
+        result_template = template.redis_message_template()
 
         result = str_mod.message_template()
         initial_data_order_allowed = starter.is_order_allowed_combining(
@@ -727,7 +728,7 @@ async def distributing_transaction_log_from_exchange(
                 and transaction_currency_usd not in transaction_instrument_name
             ):
 
-                result = {}
+                result = template.trade_template()
 
                 if "sell" in transaction["side"]:
                     direction = "sell"

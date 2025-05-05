@@ -20,6 +20,7 @@ from streaming_helper.utilities import (
     caching,
     system_tools as tools,
     error_handling,
+    template,
 )
 
 
@@ -404,7 +405,7 @@ def labelling_unlabelled_order(order: dict) -> None:
 
     order.update({"side": side})
 
-    label_open: str = get_custom_label(order)
+    label_open: str = template.get_custom_label(order)
     order.update({"label": label_open})
 
     return order
@@ -438,7 +439,7 @@ def labelling_unlabelled_order_oto(
 
     """
 
-    label: str = get_custom_label_oto(transaction_main)
+    label: str = template.get_custom_label_oto(transaction_main)
 
     label_open: str = label["open"]
     label_closed: str = label["closed"]
@@ -476,41 +477,6 @@ def labelling_unlabelled_order_oto(
         order_allowed=True,
         order_parameters=params,
     )
-
-
-def get_custom_label_oto(transaction: list) -> dict:
-
-    side = transaction["direction"]
-    side_label = "Short" if side == "sell" else "Long"
-
-    try:
-        last_update = transaction["timestamp"]
-    except:
-        try:
-            last_update = transaction["last_update_timestamp"]
-        except:
-            last_update = transaction["creation_timestamp"]
-
-    return dict(
-        open=(f"custom{side_label.title()}-open-{last_update}"),
-        closed=(f"custom{side_label.title()}-closed-{last_update}"),
-    )
-
-
-def get_custom_label(transaction: list) -> str:
-
-    side = transaction["direction"]
-    side_label = "Short" if side == "sell" else "Long"
-
-    try:
-        last_update = transaction["timestamp"]
-    except:
-        try:
-            last_update = transaction["last_update_timestamp"]
-        except:
-            last_update = transaction["creation_timestamp"]
-
-    return f"custom{side_label.title()}-open-{last_update}"
 
 
 async def saving_order_based_on_state(
@@ -621,7 +587,7 @@ async def saving_traded_orders(
         order_id,
     )
 
-    trade_to_db = trade_template()
+    trade_to_db = template.trade_template()
 
     trade_to_db.update({"instrument_name": trade_result["instrument_name"]})
     trade_to_db.update({"amount": trade_result["amount"]})
@@ -630,13 +596,17 @@ async def saving_traded_orders(
     trade_to_db.update({"trade_id": trade_result["trade_id"]})
     trade_to_db.update({"order_id": trade_result["order_id"]})
     trade_to_db.update({"timestamp": trade_result["timestamp"]})
+    trade_to_db.update({"currency": trade_result["fee_currency"]})
 
     try:
-        trade_to_db.update({"label": trade_result["label"]})
+
+        label_open = trade_result["label"]
 
     except:
 
-        pass
+        label_open: str = template.get_custom_label(trade_result)
+
+    trade_to_db.update({"label": label_open})
 
     await db_mgt.insert_tables(
         trade_table,
@@ -769,37 +739,3 @@ def is_order_has_executed(
         ordered = []
 
     return True if order_has_executed else False
-
-
-def trade_template() -> str:
-    """
-    combining result from websocket (user changes/trade)
-        and rest API (get_transaction_log)
-
-        instrument_name: str=None,
-        amount: int=None,
-        price: float=None,
-        side: str=None,
-        direction: str=None,
-        position: int=None,
-        currency: str=None,
-        timestamp: int=None,
-        trade_id: str=None,
-        order_id: str=None,
-        user_seq: int=None
-
-    label is not registered since it needed as identification for no label
-    """
-    return dict(
-        instrument_name=None,
-        amount=None,
-        price=None,
-        side=None,
-        direction=None,
-        position=None,
-        currency=None,
-        timestamp=None,
-        trade_id=None,
-        order_id=None,
-        user_seq=None,
-    )

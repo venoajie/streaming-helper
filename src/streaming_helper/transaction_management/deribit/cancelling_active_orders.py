@@ -20,6 +20,7 @@ from streaming_helper.data_announcer.deribit import get_instrument_summary, star
 from streaming_helper.utilities import (
     string_modification as str_mod,
     error_handling,
+    template,
 )
 
 
@@ -97,7 +98,7 @@ async def cancelling_orders(
 
         query_trades = f"SELECT * FROM  v_trading_all_active"
 
-        result_template = str_mod.message_template()
+        result_template = template.redis_message_template()
 
         my_trades_active_from_db = await db_mgt.executing_query_with_return(
             query_trades
@@ -448,17 +449,19 @@ async def cancel_by_order_id(
 
     result = await api_request.get_cancel_order_byOrderId(open_order_id)
 
-    log.warning(result)
-
+    """
+    
     try:
         if (result["error"]["message"]) == "not_open_order":
             log.critical(f"CANCEL non-existing order_id {result} {open_order_id}")
 
     except:
 
-        log.critical(f"""CANCEL_by_order_id {result["result"]} {open_order_id}""")
+        log.critical(f"CANCEL_by_order_id {result} {open_order_id}")
 
-        return result
+    """
+
+    return result
 
 
 async def if_cancel_is_true(
