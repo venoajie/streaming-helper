@@ -2,6 +2,7 @@
 
 from streaming_helper.restful_api import connector
 
+
 def get_basic_https() -> str:
     return f"https://api.telegram.org/bot"
 
@@ -25,13 +26,8 @@ async def send_message(
     bot_token: str,
     bot_chatID: str,
     bot_message: str,
-)) -> None:
+) -> None:
     return await connector.get_connected(
-            get_basic_https(),
-            message_end_point(
-            bot_token,
-            bot_chatID,
-            bot_message),
-        )
-        
-        
+        get_basic_https(),
+        message_end_point(bot_token, bot_chatID, bot_message),
+    )

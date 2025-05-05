@@ -105,7 +105,7 @@ def get_subaccounts_params(
 
 
 @dataclass(unsafe_hash=True, slots=True)
-class FetchResult:
+class SendApiRequest:
     """ """
 
     client_id: str
