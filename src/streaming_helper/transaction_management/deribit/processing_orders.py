@@ -122,6 +122,7 @@ async def processing_orders(
                             )
 
                             await saving_traded_orders(
+                                api_request,
                                 trade,
                                 archive_db_table,
                                 order_db_table,
@@ -563,6 +564,7 @@ async def saving_order_based_on_state(
 
 
 async def saving_traded_orders(
+    api_request: object
     trade_result: str,
     trade_table: str,
     order_db_table: str,
@@ -588,6 +590,10 @@ async def saving_traded_orders(
     )
 
     trade_to_db = template.trade_template()
+    
+    currency = trade_result["fee_currency"]
+    
+    timestamp = trade_result["timestamp"]
 
     trade_to_db.update({"instrument_name": trade_result["instrument_name"]})
     trade_to_db.update({"amount": trade_result["amount"]})
@@ -595,9 +601,15 @@ async def saving_traded_orders(
     trade_to_db.update({"direction": trade_result["direction"]})
     trade_to_db.update({"trade_id": trade_result["trade_id"]})
     trade_to_db.update({"order_id": trade_result["order_id"]})
-    trade_to_db.update({"timestamp": trade_result["timestamp"]})
-    trade_to_db.update({"currency": trade_result["fee_currency"]})
-
+    trade_to_db.update({"timestamp": timestamp})
+    trade_to_db.update({"currency": currency})
+    
+    transaction_log = await api_request.get_transaction_log(
+                                    currency.lower(),
+                                    timestamp - 100000,
+                                    1000,
+                                    "trade",
+                                )
     try:
 
         label_open = trade_result["label"]
