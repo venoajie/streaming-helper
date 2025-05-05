@@ -59,7 +59,7 @@ def get_instruments_kind(
 
 
 async def get_futures_for_active_currencies(
-    active_currencies: list, 
+    active_currencies: list,
     settlement_periods: list,
 ) -> list:
     """_summary_

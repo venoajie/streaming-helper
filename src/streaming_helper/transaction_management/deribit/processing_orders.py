@@ -41,8 +41,10 @@ async def processing_orders(
         # connecting to redis pubsub
         pubsub: object = client_redis.pubsub()
 
-        #instantiate private connection
-        api_request: object = end_point_params_template.SendApiRequest(client_id,client_secret)
+        # instantiate private connection
+        api_request: object = end_point_params_template.SendApiRequest(
+            client_id, client_secret
+        )
 
         # subscribe to channels
         await subscribing_to_channels.redis_channels(
@@ -126,7 +128,9 @@ async def processing_orders(
 
                             for currency in currencies:
 
-                                result = await api_request.get_subaccounts_details(currency)
+                                result = await api_request.get_subaccounts_details(
+                                    currency
+                                )
 
                                 await updating_sub_account(
                                     client_redis,
@@ -177,9 +181,9 @@ async def processing_orders(
 
                                 order_id = data["order_id"]
                                 order_state = data["order_state"]
-                             
+
                                 # no label
-                                if label == "" or label == '':
+                                if label == "" or label == "":
 
                                     await cancelling_and_relabelling(
                                         api_request,
@@ -309,11 +313,11 @@ async def if_order_is_true(
             log.debug(f"label_has_order_id {label_has_order_id}")
 
             if label_has_order_id:
-                
+
                 ordered.remove(params)
 
             else:
-                
+
                 if ordered == []:
 
                     return await api_request.send_limit_order(params)
@@ -342,20 +346,20 @@ async def cancelling_and_relabelling(
 ) -> None:
 
     log.debug(f"label {label} order_state {order_state} order {order}")
-    
+
     log.debug(order["order_id"])
-    
-    log.error(label == "" or label == '')
+
+    log.error(label == "" or label == "")
 
     # no label
-    if label == "" or label == '':
+    if label == "" or label == "":
 
         # log.info(label == "")
-        
+
         order_id = order["order_id"]
 
         if "open" in order_state or "untriggered" in order_state:
-            
+
             log.error("OTO" not in order_id)
 
             if "OTO" not in order_id:
@@ -370,7 +374,7 @@ async def cancelling_and_relabelling(
                     api_request,
                     order_db_table,
                     order_id,
-)
+                )
 
             order_attributes = labelling_unlabelled_order(order)
             # log.warning (f"order_attributes {order_attributes}")
@@ -659,9 +663,8 @@ async def saving_oto_order(
     open_orders = await api_request.get_open_orders(kind, type)
 
     print(f"open_orders {open_orders}")
-    
+
     if open_orders:
-        
 
         transaction_secondary = [
             o for o in open_orders if transaction_main_oto in o["order_id"]
@@ -687,7 +690,9 @@ async def saving_oto_order(
                     transaction_main, transaction_secondary
                 )
 
-                await api_request.get_cancel_order_byOrderId(transaction_main["order_id"])
+                await api_request.get_cancel_order_byOrderId(
+                    transaction_main["order_id"]
+                )
 
                 await if_order_is_true(
                     api_request,

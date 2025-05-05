@@ -40,8 +40,10 @@ async def cancelling_orders(
         # connecting to redis pubsub
         pubsub: object = client_redis.pubsub()
 
-        #instantiate private connection
-        api_request: object = end_point_params_template.SendApiRequest(client_id,client_secret)
+        # instantiate private connection
+        api_request: object = end_point_params_template.SendApiRequest(
+            client_id, client_secret
+        )
 
         # subscribe to channels
         await subscribing_to_channels.redis_channels(
@@ -445,7 +447,7 @@ async def cancel_by_order_id(
     )
 
     result = await api_request.get_cancel_order_byOrderId(open_order_id)
-    
+
     log.warning(result)
 
     try:

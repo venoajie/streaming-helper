@@ -66,7 +66,6 @@ async def initial_procedures(
                 instruments,
             )
 
-
     except Exception as error:
 
         await error_handling.parse_error_message_with_redis(

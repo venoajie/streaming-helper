@@ -503,7 +503,7 @@ async def incremental_ticker_in_message_channel(
 
     result["params"].update({"channel": ticker_cached_channel})
     result["params"].update({"data": pub_message})
-    
+
     await redis_client.publishing_result(
         pipe,
         result,

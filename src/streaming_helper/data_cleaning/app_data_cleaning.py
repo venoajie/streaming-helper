@@ -36,8 +36,10 @@ async def reconciling_size(
         # connecting to redis pubsub
         pubsub: object = client_redis.pubsub()
 
-        #instantiate api for private connection
-        api_request: object = end_point_params_template.SendApiRequest(client_id,client_secret)
+        # instantiate api for private connection
+        api_request: object = end_point_params_template.SendApiRequest(
+            client_id, client_secret
+        )
 
         # get tradable strategies
         tradable_config_app = config_app["tradable"]
@@ -88,14 +90,16 @@ async def reconciling_size(
         sub_account_cached = initial_data_subaccount["params"]["data"]
 
         positions_cached = sub_account_cached["positions_cached"]
-        
+
         await redis_client.publishing_result(
             client_redis,
             initial_data_order_allowed,
         )
 
-        query_variables = f"instrument_name, label, amount_dir as amount, trade_id, timestamp"
-                
+        query_variables = (
+            f"instrument_name, label, amount_dir as amount, trade_id, timestamp"
+        )
+
         while True:
 
             try:
@@ -113,82 +117,94 @@ async def reconciling_size(
                         for o in combined_order_allowed
                         if o["size_is_reconciled"] == 0
                     ]
-                    
+
                     log.info(f"not_allowed_instruments {not_allowed_instruments}")
 
                     if not_allowed_instruments:
-                        
-                        for instrument_name in not_allowed_instruments:
-                            
-                            currency_lower = str_mod.extract_currency_from_text(instrument_name).lower()
-                            
-                            archive_db_table = f"my_trades_all_{currency_lower}_json"
-                            
-                            query_trades_basic = f"SELECT {query_variables}  FROM  {archive_db_table}"
 
-                            query_trades_active_where = (
-                                f"WHERE instrument_name LIKE '%{instrument_name}%' AND is_open = 1 ORDER BY timestamp DESC"
+                        for instrument_name in not_allowed_instruments:
+
+                            currency_lower = str_mod.extract_currency_from_text(
+                                instrument_name
+                            ).lower()
+
+                            archive_db_table = f"my_trades_all_{currency_lower}_json"
+
+                            query_trades_basic = (
+                                f"SELECT {query_variables}  FROM  {archive_db_table}"
                             )
+
+                            query_trades_active_where = f"WHERE instrument_name LIKE '%{instrument_name}%' AND is_open = 1 ORDER BY timestamp DESC"
 
                             query_trades_active_currency = (
                                 f"{query_trades_basic} {query_trades_active_where}"
                             )
 
-                            my_trades_instrument_name = await db_mgt.executing_query_with_return(
-                                query_trades_active_currency
-                            )
-                            
-                            my_trades_and_sub_account_size_reconciled = (
-                                reconciling_db.is_my_trades_and_sub_account_size_reconciled_each_other(
-                                    instrument_name,
-                                    my_trades_instrument_name,
-                                    positions_cached,
+                            my_trades_instrument_name = (
+                                await db_mgt.executing_query_with_return(
+                                    query_trades_active_currency
                                 )
+                            )
+
+                            my_trades_and_sub_account_size_reconciled = reconciling_db.is_my_trades_and_sub_account_size_reconciled_each_other(
+                                instrument_name,
+                                my_trades_instrument_name,
+                                positions_cached,
                             )
 
                             log.critical(
                                 f"{instrument_name} {my_trades_and_sub_account_size_reconciled}"
                             )
-                            
-                            if not my_trades_and_sub_account_size_reconciled:                            
 
-                                query_trades_where = (
-                                    f"WHERE instrument_name LIKE '%{instrument_name}%' ORDER BY timestamp DESC LIMIT 2"
-                                )
+                            if not my_trades_and_sub_account_size_reconciled:
+
+                                query_trades_where = f"WHERE instrument_name LIKE '%{instrument_name}%' ORDER BY timestamp DESC LIMIT 2"
 
                                 query_trades_instrument_name = (
                                     f"{query_trades_basic} {query_trades_where}"
                                 )
 
-                                my_trades_instrument_name = await db_mgt.executing_query_with_return(
-                                    query_trades_instrument_name
+                                my_trades_instrument_name = (
+                                    await db_mgt.executing_query_with_return(
+                                        query_trades_instrument_name
+                                    )
                                 )
-                                
-                                log.info(f" my_trades_instrument_name {my_trades_instrument_name}")
-                                
+
+                                log.info(
+                                    f" my_trades_instrument_name {my_trades_instrument_name}"
+                                )
+
                                 if my_trades_instrument_name:
-                                        
-                                    min_timestamp = min([o["timestamp"] for o in my_trades_instrument_name])
-                                
+
+                                    min_timestamp = min(
+                                        [
+                                            o["timestamp"]
+                                            for o in my_trades_instrument_name
+                                        ]
+                                    )
+
                                 else:
-                                    
-                                    one_day_ago = server_time - (one_minute * 60 * 24 * 100)
-                                        
+
+                                    one_day_ago = server_time - (
+                                        one_minute * 60 * 24 * 100
+                                    )
+
                                     min_timestamp = one_day_ago
-                                
+
                                 transaction_log = await api_request.get_transaction_log(
-                                        currency_lower,
-                                        min_timestamp,
-                                        1000,
-                                        "trade",)
-                                
+                                    currency_lower,
+                                    min_timestamp,
+                                    1000,
+                                    "trade",
+                                )
+
                                 if transaction_log:
-                                    
+
                                     await distributing_transaction_log_from_exchange(
                                         archive_db_table,
                                         instrument_name,
                                         transaction_log,
-                                        )
+                                    )
 
                 if ticker_cached_channel in message_channel:
 
@@ -255,7 +271,7 @@ async def reconciling_size(
                 await error_handling.parse_error_message_with_redis(
                     client_redis,
                     error,
-                    )
+                )
 
                 continue
 
@@ -437,10 +453,14 @@ async def rechecking_based_on_data_in_sqlite(
         currency_lower = currency.lower()
 
         archive_db_table = f"my_trades_all_{currency_lower}_json"
-        
-        query_variables = f"instrument_name, label, amount_dir as amount, timestamp, trade_id"
 
-        query_trades_active_basic = f"SELECT {query_variables}  FROM  {archive_db_table}"
+        query_variables = (
+            f"instrument_name, label, amount_dir as amount, timestamp, trade_id"
+        )
+
+        query_trades_active_basic = (
+            f"SELECT {query_variables}  FROM  {archive_db_table}"
+        )
 
         query_trades_active_where = (
             f"WHERE instrument_name LIKE '%{currency}%' AND is_open = 1"
@@ -516,13 +536,15 @@ def updating_order_allowed_cache(
 
         order_allowed = 0
 
-    instrument_exist = [o for o in combined_order_allowed if instrument_name in o["instrument_name"]]
+    instrument_exist = [
+        o for o in combined_order_allowed if instrument_name in o["instrument_name"]
+    ]
 
     if instrument_exist:
-        
-        [o for o in combined_order_allowed if instrument_name in o["instrument_name"]][0][
-        "size_is_reconciled"
-    ] = order_allowed
+
+        [o for o in combined_order_allowed if instrument_name in o["instrument_name"]][
+            0
+        ]["size_is_reconciled"] = order_allowed
 
 
 async def inserting_transaction_log_data(
@@ -551,10 +573,11 @@ async def inserting_transaction_log_data(
             min_timestamp = min(my_trades_currency_with_blanks_user_seq) - 100000
 
             transaction_log = await api_request.get_transaction_log(
-                                            currency,
-                                            min_timestamp,
-                                            100,
-                                            "trade",)
+                currency,
+                min_timestamp,
+                100,
+                "trade",
+            )
 
             where_filter = f"trade_id"
 
@@ -563,7 +586,7 @@ async def inserting_transaction_log_data(
             )
             log.warning(f"transaction_log {transaction_log}")
             log.info([o for o in my_trades_currency if o["user_seq"] is None])
-            
+
             if transaction_log:
                 for transaction in transaction_log:
 
@@ -572,32 +595,32 @@ async def inserting_transaction_log_data(
                     side = transaction["side"]
                     timestamp = int(transaction["timestamp"])
                     position = transaction["position"]
-                    
+
                     components = ["user_seq", "side", "timestamp", "position"]
-                    
-                    for component in components:    
-                        
+
+                    for component in components:
+
                         if component == "user_seq":
                             sub_component = user_seq
-                        
+
                         elif component == "side":
                             sub_component = side
-                        
+
                         elif component == "timestamp":
                             sub_component = timestamp
-                        
+
                         elif component == "position":
                             sub_component = position
-                        
+
                         await db_mgt.update_status_data(
-                            archive_db_table, 
-                            component, 
+                            archive_db_table,
+                            component,
                             where_filter,
-                            trade_id, 
-                            sub_component, 
+                            trade_id,
+                            sub_component,
                             "=",
-                            )
-                        
+                        )
+
 
 async def labelling_blank_labels(
     instrument_name: str,
@@ -688,19 +711,22 @@ async def distributing_transaction_log_from_exchange(
     if transaction_log and "too_many_requests" not in transaction_log:
 
         for transaction in transaction_log:
-            
+
             transaction_instrument_name = transaction["instrument_name"]
-            
+
             transaction_currency = transaction["currency"]
 
-            transaction_currency_usd = (f"{transaction_currency.upper()}_USD")
-            
-            log.info(f"transaction_currency_usd {transaction_currency_usd} {transaction_currency_usd not in transaction_instrument_name}")
-            
+            transaction_currency_usd = f"{transaction_currency.upper()}_USD"
+
+            log.info(
+                f"transaction_currency_usd {transaction_currency_usd} {transaction_currency_usd not in transaction_instrument_name}"
+            )
+
             if (
-                instrument_name in transaction_instrument_name 
-                and transaction_currency_usd not in transaction_instrument_name):
-                
+                instrument_name in transaction_instrument_name
+                and transaction_currency_usd not in transaction_instrument_name
+            ):
+
                 result = {}
 
                 if "sell" in transaction["side"]:
@@ -726,5 +752,3 @@ async def distributing_transaction_log_from_exchange(
                     archive_db_table,
                     result,
                 )
-
-
