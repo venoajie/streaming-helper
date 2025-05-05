@@ -24,6 +24,15 @@ def get_server_time_end_point() -> str:
 def get_instruments_end_point(currency) -> str:
     return f"public/get_instruments?currency={currency.upper()}"
 
+async def get_instruments(currency) -> str:
+    
+    result =   await connector.get_connected(
+        get_basic_https(),
+        get_instruments_end_point(currency),
+        )
+    
+    return result["result"]
+
 
 def get_tickers_end_point(instrument_name: str) -> str:
 
@@ -104,6 +113,20 @@ def get_subaccounts_params(
     }
 
 
+def get_subaccounts_details_end_point() -> str:
+    return f"private/get_subaccounts_details"
+
+
+def get_subaccounts_details_params(
+    currency: str,
+    with_open_orders: bool = True,
+) -> dict:
+    return {
+        "currency": currency,
+        "with_open_orders": with_open_orders,
+    }
+
+
 @dataclass(unsafe_hash=True, slots=True)
 class SendApiRequest:
     """ """
@@ -115,7 +138,6 @@ class SendApiRequest:
         self,
         client_id: str,
         client_secret: str,
-        currency: str,
         with_portfolio: bool = True,
     ) -> dict:
 
@@ -129,19 +151,26 @@ class SendApiRequest:
 
         return sub_account["result"]
 
+    async def get_subaccounts_details(
+        self,
+        client_id: str,
+        client_secret: str,
+        currency: str,
+        with_open_orders: bool = True,
+    ) -> dict:
 
-def get_subaccounts_details_end_point() -> str:
-    return f"private/get_subaccounts_details"
+        sub_account = await connector.get_connected(
+            get_basic_https(),
+            get_subaccounts_details_end_point(),
+            client_id,
+            client_secret,
+            get_subaccounts_details_params(
+                currency,
+                with_open_orders,
+                ),
+        )
 
-
-def get_subaccounts_details_params(
-    currency: str,
-    with_open_orders: bool = True,
-) -> dict:
-    return {
-        "currency": currency,
-        "with_open_orders": with_open_orders,
-    }
+        return sub_account["result"]
 
 
 def get_user_trades_by_currency_end_point() -> str:
