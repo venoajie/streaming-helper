@@ -39,6 +39,15 @@ def get_tickers_end_point(instrument_name: str) -> str:
     return f"public/ticker?instrument_name={instrument_name}"
 
 
+async def get_ticker(instrument_name) -> str:
+    
+    result =   await connector.get_connected(
+        get_basic_https(),
+        get_tickers_end_point(instrument_name),
+        )
+    
+    return result["result"]
+
 def get_tradingview_chart_data_end_point() -> str:
     return f"get_tradingview_chart_data?"
 
@@ -144,8 +153,8 @@ class SendApiRequest:
         sub_account = await connector.get_connected(
             get_basic_https(),
             get_subaccounts_end_point(),
-            client_id,
-            client_secret,
+            self.client_id,
+            self.client_secret,
             get_subaccounts_params(with_portfolio),
         )
 
@@ -153,8 +162,6 @@ class SendApiRequest:
 
     async def get_subaccounts_details(
         self,
-        client_id: str,
-        client_secret: str,
         currency: str,
         with_open_orders: bool = True,
     ) -> dict:
@@ -162,8 +169,8 @@ class SendApiRequest:
         sub_account = await connector.get_connected(
             get_basic_https(),
             get_subaccounts_details_end_point(),
-            client_id,
-            client_secret,
+            self.client_id,
+            self.client_secret,
             get_subaccounts_details_params(
                 currency,
                 with_open_orders,

@@ -37,11 +37,8 @@ def get_instruments_kind(
 
     """
 
-    if result:
+    if not result:
 
-        result = result["result"]
-
-    else:
         my_path_instruments = provide_path_for_file("instruments", currency)
 
         instruments_raw = read_data(my_path_instruments)
@@ -49,6 +46,7 @@ def get_instruments_kind(
         result = instruments_raw[0]["result"]
 
     non_spot_instruments = [o for o in result if o["kind"] != "spot"]
+
     instruments_kind = (
         non_spot_instruments
         if kind == "all"
