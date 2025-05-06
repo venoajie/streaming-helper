@@ -97,7 +97,9 @@ async def relabelling_trades(
 
                     for trade in data:
 
-                        currency_lower: str = trade["fee_currency"].lower()
+                        instrument_name: str = trade["instrument_name"]
+                        currency: str = trade["fee_currency"]
+                        currency_lower: str = currency.lower()
 
                         archive_db_table = f"my_trades_all_{currency_lower}_json"
 
@@ -125,7 +127,7 @@ async def relabelling_trades(
 
                         # handling transactions with no label
                         await labelling_blank_labels(
-                            currency,
+                            instrument_name,
                             my_trades_currency_all_transactions,
                             archive_db_table,
                         )
