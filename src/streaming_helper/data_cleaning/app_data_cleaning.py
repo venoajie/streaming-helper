@@ -202,6 +202,7 @@ async def reconciling_size(
                                 if transaction_log:
 
                                     await distributing_transaction_log_from_exchange(
+                                        api_request,
                                         archive_db_table,
                                         instrument_name,
                                         transaction_log,
@@ -704,6 +705,7 @@ def get_custom_label(transaction: list) -> str:
 
 
 async def distributing_transaction_log_from_exchange(
+    api_request,
     archive_db_table: str,
     instrument_name: str,
     transaction_log: list,
@@ -736,18 +738,52 @@ async def distributing_transaction_log_from_exchange(
                 if "buy" in transaction["side"]:
                     direction = "buy"
 
-                result.update({"trade_id": transaction["trade_id"]})
+                timestamp = transaction["timestamp"]
+                trade_id = transaction["trade_id"]
+
+                result.update({"trade_id": trade_id})
                 result.update({"user_seq": transaction["user_seq"]})
                 result.update({"side": transaction["side"]})
-                result.update({"timestamp": transaction["timestamp"]})
+                result.update({"timestamp": timestamp})
                 result.update({"position": transaction["position"]})
                 result.update({"amount": transaction["amount"]})
                 result.update({"order_id": transaction["order_id"]})
                 result.update({"price": transaction["price"]})
                 result.update({"instrument_name": transaction_instrument_name})
-                result.update({"label": None})
                 result.update({"direction": direction})
                 result.update({"currency": transaction_currency})
+
+                # just to ensure the time stamp is below the respective timestamp above
+                ARBITRARY_NUMBER = 1000000
+                timestamp_sometimes_ago = timestamp - ARBITRARY_NUMBER
+
+                trades = await api_request.get_user_trades_by_instrument_and_time(
+                    instrument_name,
+                    timestamp_sometimes_ago,
+                    1000,
+                )
+
+                log.error(f"trades {trades}")
+
+                trade_with_the_same_trade_id = [
+                    o for o in trades if o["trade_id"] == trade_id
+                ]
+
+                log.warning(
+                    f"trade_with_the_same_trade_id {trade_with_the_same_trade_id}"
+                )
+
+                if trade_with_the_same_trade_id:
+
+                    transaction = trade_with_the_same_trade_id[0]
+
+                    label: str = transaction["label"]
+
+                else:
+                    label: str = template.get_custom_label(transaction)
+
+                if label:
+                    result.update({"label": label})
 
                 await db_mgt.insert_tables(
                     archive_db_table,

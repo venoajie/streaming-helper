@@ -67,6 +67,15 @@ async def redis_channels(
                     sub_account_cached_channel,
                 ]
 
+            case "relabelling":
+                channels = [
+                    my_trade_receiving_channel,
+                    portfolio_channel,
+                    order_rest_channel,
+                    order_update_channel,
+                    sqlite_updating_channel,
+                    sub_account_cached_channel,
+                ]
         [await pubsub.subscribe(o) for o in channels]
 
     except Exception as error:

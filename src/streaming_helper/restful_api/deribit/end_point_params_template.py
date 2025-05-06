@@ -290,6 +290,30 @@ def get_cancel_order_params(
     return {"order_id": order_id}
 
 
+def get_user_trades_by_currency_end_point() -> str:
+    return f"private/get_user_trades_by_currency"
+
+
+def get_user_trades_by_instrument_and_time_end_point() -> str:
+    return f"private/get_user_trades_by_instrument_and_time"
+
+
+def get_user_trades_by_instrument_and_time_params(
+    instrument_name: str,
+    start_timestamp: int,
+    count: int = 1000,
+) -> dict:
+
+    now_unix = time_mod.get_now_unix_time()
+
+    return {
+        "count": count,
+        "end_timestamp": now_unix,
+        "instrument_name": instrument_name,
+        "start_timestamp": start_timestamp,
+    }
+
+
 @dataclass(unsafe_hash=True, slots=True)
 class SendApiRequest:
     """ """
@@ -531,7 +555,7 @@ class SendApiRequest:
         type: str,
     ) -> list:
 
-        result_open_order = await connector.get_connected(
+        result_open_orders = await connector.get_connected(
             get_basic_https(),
             get_open_orders_end_point(),
             self.client_id,
@@ -542,11 +566,28 @@ class SendApiRequest:
             ),
         )
 
-        return result_open_order["result"]
+        return result_open_orders["result"]
 
+    async def get_user_trades_by_instrument_and_time(
+        self,
+        instrument_name: str,
+        start_timestamp: int,
+        count: 1000,
+    ) -> list:
 
-def get_user_trades_by_currency_end_point() -> str:
-    return f"private/get_user_trades_by_currency"
+        result_trades = await connector.get_connected(
+            get_basic_https(),
+            get_user_trades_by_instrument_and_time_end_point(),
+            self.client_id,
+            self.client_secret,
+            get_user_trades_by_instrument_and_time_params(
+                instrument_name,
+                start_timestamp,
+                count,
+            ),
+        )
+
+        return result_trades["result"]
 
 
 def get_user_trades_by_currency_params(
@@ -558,26 +599,6 @@ def get_user_trades_by_currency_params(
         "currency": currency,
         "kind": kind,
         "count": count,
-    }
-
-
-def get_user_trades_by_instrument_and_time_end_point() -> str:
-    return f"private/get_user_trades_by_instrument_and_time"
-
-
-def get_user_trades_by_instrument_and_time_params(
-    instrument_name: str,
-    start_timestamp: int,
-    count: int = 1000,
-) -> dict:
-
-    now_unix = time_mod.get_now_unix_time()
-
-    return {
-        "count": count,
-        "end_timestamp": now_unix,
-        "instrument_name": instrument_name,
-        "start_timestamp": start_timestamp,
     }
 
 

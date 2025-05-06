@@ -133,9 +133,7 @@ async def cancelling_orders(
 
                 params = await get_published_messages.get_redis_message(message_byte)
 
-                data = params["data"]
-
-                message_channel = params["channel"]
+                data, message_channel = params["data"], params["channel"]
 
                 if market_analytics_channel in message_channel:
 
