@@ -16,7 +16,6 @@ from streaming_helper.data_announcer.deribit import starter
 from streaming_helper.utilities import (
     string_modification as str_mod,
     error_handling,
-    system_tools,
     time_modification as time_mod,
     template,
 )
@@ -77,9 +76,8 @@ async def reconciling_size(
 
         futures_instruments_name = [o for o in all_instruments_name if "-FS-" not in o]
 
-        result_template = template.redis_message_template()
-
-        result = str_mod.message_template()
+        result_template, trade_template = template.redis_message_template(), template.trade_template()
+        
         initial_data_order_allowed = starter.is_order_allowed_combining(
             all_instruments_name,
             order_allowed_channel,
@@ -206,6 +204,7 @@ async def reconciling_size(
                                         archive_db_table,
                                         instrument_name,
                                         transaction_log,
+                                        trade_template,
                                     )
 
                 if ticker_cached_channel in message_channel:
@@ -223,7 +222,7 @@ async def reconciling_size(
                             currencies,
                             order_allowed_channel,
                             positions_cached,
-                            result,
+                            result_template,
                         )
 
                         server_time = exchange_server_time
@@ -265,7 +264,7 @@ async def reconciling_size(
                         currencies,
                         order_allowed_channel,
                         positions_cached,
-                        result,
+                        result_template,
                     )
 
             except Exception as error:
@@ -389,13 +388,6 @@ async def rechecking_based_on_sub_account(
 
             my_trades_currency_all_transactions: list = (
                 await db_mgt.executing_query_with_return(query_trades)
-            )
-
-            # handling transactions with no label
-            await labelling_blank_labels(
-                instrument_name,
-                my_trades_currency_all_transactions,
-                archive_db_table,
             )
 
             my_trades_instrument_name = (
@@ -624,70 +616,6 @@ async def inserting_transaction_log_data(
                         )
 
 
-async def labelling_blank_labels(
-    instrument_name: str,
-    my_trades_currency_active: list,
-    archive_db_table: str,
-) -> None:
-
-    my_trades_currency_active_with_blanks = [
-        o for o in my_trades_currency_active if o["label"] is None
-    ]
-
-    log.debug(
-        f"my_trades_currency_active_with_blanks {my_trades_currency_active_with_blanks}"
-    )
-
-    if my_trades_currency_active_with_blanks:
-        column_trade: str = (
-            "id",
-            "instrument_name",
-            "data",
-            "label",
-            "trade_id",
-        )
-
-        my_trades_currency_archive: list = (
-            await db_mgt.executing_query_based_on_currency_or_instrument_and_strategy(
-                archive_db_table, instrument_name, "all", "all", column_trade
-            )
-        )
-
-        my_trades_currency_active_with_blanks = [
-            o for o in my_trades_currency_archive if o["label"] is None
-        ]
-
-        my_trades_archive_instrument_id = [
-            o["trade_id"] for o in my_trades_currency_active_with_blanks
-        ]
-
-        if my_trades_archive_instrument_id:
-            for id in my_trades_archive_instrument_id:
-
-                transaction = str_mod.parsing_sqlite_json_output(
-                    [
-                        o["data"]
-                        for o in my_trades_currency_active_with_blanks
-                        if id == o["trade_id"]
-                    ]
-                )[0]
-
-                log.warning(f"transaction {transaction}")
-
-                label_open: str = get_custom_label(transaction)
-
-                where_filter = "trade_id"
-
-                await db_mgt.update_status_data(
-                    archive_db_table,
-                    "label",
-                    where_filter,
-                    id,
-                    label_open,
-                    "=",
-                )
-
-
 def get_custom_label(transaction: list) -> str:
 
     side = transaction["direction"]
@@ -709,6 +637,7 @@ async def distributing_transaction_log_from_exchange(
     archive_db_table: str,
     instrument_name: str,
     transaction_log: list,
+    trade_template: dict,
 ) -> None:
 
     if transaction_log and "too_many_requests" not in transaction_log:
@@ -721,16 +650,12 @@ async def distributing_transaction_log_from_exchange(
 
             transaction_currency_usd = f"{transaction_currency.upper()}_USD"
 
-            log.info(
-                f"transaction_currency_usd {transaction_currency_usd} {transaction_currency_usd not in transaction_instrument_name}"
-            )
+            log.info(  f"transaction {transaction}" )
 
             if (
                 instrument_name in transaction_instrument_name
                 and transaction_currency_usd not in transaction_instrument_name
             ):
-
-                result = template.trade_template()
 
                 if "sell" in transaction["side"]:
                     direction = "sell"
@@ -741,17 +666,17 @@ async def distributing_transaction_log_from_exchange(
                 timestamp = transaction["timestamp"]
                 trade_id = transaction["trade_id"]
 
-                result.update({"trade_id": trade_id})
-                result.update({"user_seq": transaction["user_seq"]})
-                result.update({"side": transaction["side"]})
-                result.update({"timestamp": timestamp})
-                result.update({"position": transaction["position"]})
-                result.update({"amount": transaction["amount"]})
-                result.update({"order_id": transaction["order_id"]})
-                result.update({"price": transaction["price"]})
-                result.update({"instrument_name": transaction_instrument_name})
-                result.update({"direction": direction})
-                result.update({"currency": transaction_currency})
+                trade_template.update({"trade_id": trade_id})
+                trade_template.update({"user_seq": transaction["user_seq"]})
+                trade_template.update({"side": transaction["side"]})
+                trade_template.update({"timestamp": timestamp})
+                trade_template.update({"position": transaction["position"]})
+                trade_template.update({"amount": transaction["amount"]})
+                trade_template.update({"order_id": transaction["order_id"]})
+                trade_template.update({"price": transaction["price"]})
+                trade_template.update({"instrument_name": transaction_instrument_name})
+                trade_template.update({"direction": direction})
+                trade_template.update({"currency": transaction_currency})
 
                 # just to ensure the time stamp is below the respective timestamp above
                 ARBITRARY_NUMBER = 1000000
@@ -760,32 +685,42 @@ async def distributing_transaction_log_from_exchange(
                 trades = await api_request.get_user_trades_by_instrument_and_time(
                     instrument_name,
                     timestamp_sometimes_ago,
+                    True,
                     1000,
                 )
 
-                log.error(f"trades {trades}")
+                log.error(f"trades {instrument_name} {trades}")
+                
+                if trades:
 
-                trade_with_the_same_trade_id = [
-                    o for o in trades if o["trade_id"] == trade_id
-                ]
+                    trade_with_the_same_trade_id = [
+                        o for o in trades if o["trade_id"] == trade_id
+                    ]
 
-                log.warning(
-                    f"trade_with_the_same_trade_id {trade_with_the_same_trade_id}"
-                )
+                    log.warning(
+                        f"trade_with_the_same_trade_id {trade_with_the_same_trade_id}"
+                    )
 
-                if trade_with_the_same_trade_id:
+                    if trade_with_the_same_trade_id:
 
-                    transaction = trade_with_the_same_trade_id[0]
+                        transaction = trade_with_the_same_trade_id[0]
 
-                    label: str = transaction["label"]
+                        try:
+                            label: str = transaction["label"]
+
+                        except:
+                            label: str = template.get_custom_label(transaction)
+
+                    else:
+                        label: str = template.get_custom_label(transaction)
 
                 else:
                     label: str = template.get_custom_label(transaction)
 
                 if label:
-                    result.update({"label": label})
+                    trade_template.update({"label": label})
 
-                await db_mgt.insert_tables(
-                    archive_db_table,
-                    result,
-                )
+                    await db_mgt.insert_tables(
+                        archive_db_table,
+                        trade_template,
+                    )

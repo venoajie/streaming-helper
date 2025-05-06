@@ -313,12 +313,9 @@ def get_config_tomli(file_name: str) -> list:
 
     config_path = provide_path_for_file(file_name)
 
-    try:
-        if os.path.exists(config_path):
-            with open(config_path, "rb") as handle:
-                read = tomli.load(handle)
-                return read
+    if os.path.exists(config_path):
+        
+        with open(config_path, "rb") as handle:
+            read = tomli.load(handle)
+            return read
 
-    except Exception as error:
-        parse_error_message(error)
-        return []

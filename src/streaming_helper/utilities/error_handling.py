@@ -6,7 +6,7 @@ import traceback
 
 from loguru import logger as log
 
-from streaming_helper.utilities import string_modification as str_mod
+from streaming_helper.utilities import string_modification as str_mod,template
 
 
 def parse_error_message(
@@ -45,7 +45,7 @@ async def parse_error_message_with_redis(
 
     try:
 
-        result: dict = str_mod.message_template()
+        result: dict = template.redis_message_template()
 
         info = parse_error_message(
             error,

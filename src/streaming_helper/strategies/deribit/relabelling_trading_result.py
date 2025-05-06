@@ -27,7 +27,7 @@ async def relabelling_trades(
     client_redis: object,
     config_app: list,
     redis_channels: list,
-) -> None:
+    ) -> None:
     """ """
 
     try:
@@ -160,7 +160,7 @@ async def relabelling_trades(
 
                     for currency in currencies:
 
-                        currency_lower: str = trade["fee_currency"].lower()
+                        currency_lower: str = currency.lower()
 
                         archive_db_table = f"my_trades_all_{currency_lower}_json"
 

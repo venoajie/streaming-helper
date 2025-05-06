@@ -51,7 +51,18 @@ def trade_template() -> str:
 
 def get_custom_label(transaction: dict) -> str:
 
-    side = transaction["direction"]
+    try:
+    
+        side = transaction["direction"]
+    
+    except:
+
+        if "sell" in transaction["side"]:
+            side = "sell"
+
+        if "buy" in transaction["side"]:
+            side = "buy"
+    
     side_label = "Short" if side == "sell" else "Long"
 
     try:

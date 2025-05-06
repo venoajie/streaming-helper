@@ -301,6 +301,7 @@ def get_user_trades_by_instrument_and_time_end_point() -> str:
 def get_user_trades_by_instrument_and_time_params(
     instrument_name: str,
     start_timestamp: int,
+    historical: bool = True,
     count: int = 1000,
 ) -> dict:
 
@@ -310,6 +311,7 @@ def get_user_trades_by_instrument_and_time_params(
         "count": count,
         "end_timestamp": now_unix,
         "instrument_name": instrument_name,
+        "historical": historical,
         "start_timestamp": start_timestamp,
     }
 
@@ -572,9 +574,46 @@ class SendApiRequest:
         self,
         instrument_name: str,
         start_timestamp: int,
+        historical: True,
         count: 1000,
     ) -> list:
+        """
+        result_example = {
+            'trades': [
+                {
+                    'label': 'customLong-open-1746435478513',
+                    'timestamp': 1746435505432, 
+                    'state': 'filled', 
+                    'price': 1827.75, 
+                    'amount': 1.0, 
+                    'direction': 'buy',
+                    'index_price': 1827.94,
+                    'profit_loss': 0.0,
+                    'instrument_name': 'ETH-PERPETUAL', 
+                    'trade_seq': 179290420, 
+                    'api': True, 
+                    'mark_price': 1827.67, 
+                    'order_id': 'ETH-67544635984',
+                    'matching_id': None, 
+                    'tick_direction': 3, 
+                    'fee': 0.0,
+                    'mmp': False, 
+                    'self_trade': False, 
+                    'post_only': True, 
+                    'reduce_only': False, 
+                    'contracts': 1.0, 
+                    'trade_id': 'ETH-247401821', 
+                    'fee_currency': 'ETH', 
+                    'order_type': 'limit', 
+                    'risk_reducing': False, 
+                    'liquidity': 'M'
+                    }
+                ], 
+            'has_more': False
+            }
 
+        """
+        
         result_trades = await connector.get_connected(
             get_basic_https(),
             get_user_trades_by_instrument_and_time_end_point(),
@@ -583,11 +622,12 @@ class SendApiRequest:
             get_user_trades_by_instrument_and_time_params(
                 instrument_name,
                 start_timestamp,
+                historical,
                 count,
             ),
         )
-
-        return result_trades["result"]
+        
+        return result_trades["result"]["trades"]
 
 
 def get_user_trades_by_currency_params(
