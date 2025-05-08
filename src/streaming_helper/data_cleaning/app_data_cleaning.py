@@ -76,8 +76,11 @@ async def reconciling_size(
 
         futures_instruments_name = [o for o in all_instruments_name if "-FS-" not in o]
 
-        result_template, trade_template = template.redis_message_template(), template.trade_template()
-        
+        result_template, trade_template = (
+            template.redis_message_template(),
+            template.trade_template(),
+        )
+
         initial_data_order_allowed = starter.is_order_allowed_combining(
             all_instruments_name,
             order_allowed_channel,
@@ -650,7 +653,7 @@ async def distributing_transaction_log_from_exchange(
 
             transaction_currency_usd = f"{transaction_currency.upper()}_USD"
 
-            log.info(  f"transaction {transaction}" )
+            log.info(f"transaction {transaction}")
 
             if (
                 instrument_name in transaction_instrument_name
@@ -685,12 +688,12 @@ async def distributing_transaction_log_from_exchange(
                 trades = await api_request.get_user_trades_by_instrument_and_time(
                     instrument_name,
                     timestamp_sometimes_ago,
-                    True,
+                    False,
                     1000,
                 )
 
                 log.error(f"trades {instrument_name} {trades}")
-                
+
                 if trades:
 
                     trade_with_the_same_trade_id = [

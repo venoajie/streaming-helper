@@ -27,7 +27,7 @@ async def relabelling_trades(
     client_redis: object,
     config_app: list,
     redis_channels: list,
-    ) -> None:
+) -> None:
     """ """
 
     try:

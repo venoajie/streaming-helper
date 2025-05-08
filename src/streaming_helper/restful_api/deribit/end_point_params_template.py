@@ -5,7 +5,10 @@ import asyncio
 from dataclassy import dataclass
 
 # user defined formula
-from streaming_helper.utilities import time_modification as time_mod
+from streaming_helper.utilities import (
+    time_modification as time_mod,
+    string_modification as str_mod,
+)
 from streaming_helper.restful_api import connector
 
 
@@ -316,12 +319,110 @@ def get_user_trades_by_instrument_and_time_params(
     }
 
 
+def simulate_portfolio_end_point() -> str:
+    return f"private/simulate_portfolio"
+
+
+def simulate_portfolio_params(
+    instrument_name: str,
+    position: int,
+    add_positions: bool = True,
+) -> dict:
+
+    currency = str_mod.extract_currency_from_text(instrument_name)
+
+    return {
+        "currency": currency,
+        "add_positions": add_positions,
+        "simulated_positions": {f""" "{instrument_name}" """: {position}},
+    }
+
+
 @dataclass(unsafe_hash=True, slots=True)
 class SendApiRequest:
     """ """
 
     client_id: str
     client_secret: str
+
+    async def simulate_portfolio(
+        self,
+        instrument_name: str,
+        position: int,
+        add_positions: bool = True,
+    ) -> None:
+        """
+        result_example = {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "result": {
+                "total_delta_total_usd": 5.30812019,
+                "options_theta_map": {},
+                "projected_maintenance_margin": 0.000727,
+                "maintenance_margin": 0.000727,
+                "initial_margin": 0.000979,
+                "futures_session_rpl": 0,
+                "spot_reserve": 0,
+                "balance": 0.000567,
+                "available_subaccount_transfer_funds": 0,
+                "options_theta": 0,
+                "margin_balance": 0.002644,
+                "cross_collateral_enabled": True,
+                "total_maintenance_margin_usd": 1.334470538932,
+                "options_session_rpl": 0,
+                "projected_delta_total": 0.002742,
+                "locked_balance": 0,
+                "options_vega": 0,
+                "portfolio_margining_enabled": True,
+                "options_value": 0,
+                "equity": 0.000574,
+                "futures_session_upl": 0.000006,
+                "futures_pl": -0.000068,
+                "session_upl": 0.000006,
+                "total_margin_balance_usd": 4.852886723,
+                "delta_total": 0.002742,
+                "options_vega_map": {},
+                "total_pl": -0.000068,
+                "margin_model": "cross_pm",
+                "options_session_upl": 0,
+                "options_delta": 0,
+                "fee_balance": 0,
+                "session_rpl": 0,
+                "currency": "ETH",
+                "available_funds": 0.001664,
+                "options_pl": 0,
+                "options_gamma": 0,
+                "projected_initial_margin": 0.000979,
+                "available_withdrawal_funds": 0.000567,
+                "total_initial_margin_usd": 1.797687367,
+                "total_equity_usd": 4.852886723,
+                "delta_total_map": {
+                "eth_usd": 0.002742375
+                },
+                "additional_reserve": 0,
+                "options_gamma_map": {}
+                },
+            "usIn": 1746618638373417,
+            "usOut": 1746618638377054,
+            "usDiff": 3637,
+            "testnet": False
+            }
+
+        """
+
+        portfolio_simulation = await connector.get_connected(
+            get_basic_https(),
+            simulate_portfolio_end_point(),
+            self.client_id,
+            self.client_secret,
+            simulate_portfolio_params(
+                instrument_name,
+                position,
+                add_positions,
+            ),
+        )
+
+        return portfolio_simulation["result"]
 
     async def get_cancel_order_byOrderId(
         self,
@@ -582,38 +683,38 @@ class SendApiRequest:
             'trades': [
                 {
                     'label': 'customLong-open-1746435478513',
-                    'timestamp': 1746435505432, 
-                    'state': 'filled', 
-                    'price': 1827.75, 
-                    'amount': 1.0, 
+                    'timestamp': 1746435505432,
+                    'state': 'filled',
+                    'price': 1827.75,
+                    'amount': 1.0,
                     'direction': 'buy',
                     'index_price': 1827.94,
                     'profit_loss': 0.0,
-                    'instrument_name': 'ETH-PERPETUAL', 
-                    'trade_seq': 179290420, 
-                    'api': True, 
-                    'mark_price': 1827.67, 
+                    'instrument_name': 'ETH-PERPETUAL',
+                    'trade_seq': 179290420,
+                    'api': True,
+                    'mark_price': 1827.67,
                     'order_id': 'ETH-67544635984',
-                    'matching_id': None, 
-                    'tick_direction': 3, 
+                    'matching_id': None,
+                    'tick_direction': 3,
                     'fee': 0.0,
-                    'mmp': False, 
-                    'self_trade': False, 
-                    'post_only': True, 
-                    'reduce_only': False, 
-                    'contracts': 1.0, 
-                    'trade_id': 'ETH-247401821', 
-                    'fee_currency': 'ETH', 
-                    'order_type': 'limit', 
-                    'risk_reducing': False, 
+                    'mmp': False,
+                    'self_trade': False,
+                    'post_only': True,
+                    'reduce_only': False,
+                    'contracts': 1.0,
+                    'trade_id': 'ETH-247401821',
+                    'fee_currency': 'ETH',
+                    'order_type': 'limit',
+                    'risk_reducing': False,
                     'liquidity': 'M'
                     }
-                ], 
+                ],
             'has_more': False
             }
 
         """
-        
+
         result_trades = await connector.get_connected(
             get_basic_https(),
             get_user_trades_by_instrument_and_time_end_point(),
@@ -626,7 +727,7 @@ class SendApiRequest:
                 count,
             ),
         )
-        
+
         return result_trades["result"]["trades"]
 
 
@@ -727,6 +828,8 @@ def id_numbering(
         id_item = 5
     if "position" in ws_channel:
         id_item = 6
+    if "simulation" in ws_channel:
+        id_item = 7
     id_instrument = 0
     if "BTC" or "btc" in ws_channel:
         id_instrument = 1
