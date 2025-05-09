@@ -20,7 +20,10 @@ def translate_current_local_date_time_to_utc():
     )
 
 
-def time_format_standardization(time_input, time_format: str = "%Y-%m-%d %H:%M:%S.%f"):
+def time_format_standardization(
+    time_input,
+    time_format: str = "%Y-%m-%d %H:%M:%S.%f",
+    ):
     """
     Standardize the time format.
     """
@@ -43,8 +46,9 @@ def time_format_standardization(time_input, time_format: str = "%Y-%m-%d %H:%M:%
 
 
 def convert_time_to_utc(
-    transaction_time: str = None, hours_diff_with_utc: float = None
-):
+    transaction_time: str = None, 
+    hours_diff_with_utc: float = None,
+    ) -> dict:
     """
     # Mendapatkan waktu UTC/JKT saat ini (now) dengan UTC sebagai patokan
 
@@ -116,31 +120,28 @@ def convert_time_to_unix(time) -> int:
             https://stackoverflow.com/questions/58939822/python-does-not-match-format-y-m-dthmsz-f
 
     """
-
     try:
-        try:
-            time_ = 0 if time == 0 else datetime.fromisoformat(time)
-            time = 0 if time == 0 else time_.strftime("%Y-%m-%d %H:%M:%S.%f")
-            time = 0 if time == 0 else datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
-            microsecs = time.microsecond
+        time_ = 0 if time == 0 else datetime.fromisoformat(time)
+        time = 0 if time == 0 else time_.strftime("%Y-%m-%d %H:%M:%S.%f")
+        time = 0 if time == 0 else datetime.strptime(time, "%Y-%m-%d %H:%M:%S.%f")
+        microsecs = time.microsecond
 
-        except:
-            microsecs = time.microsecond  # menarik microsecond untuk dihitung terpisah
-
-    except Exception as error:
-        import traceback
-
-        from loguru import logger as log
-
-        log.critical(f"{error}")
-        print(traceback.format_exc())
+    except:
+        microsecs = time.microsecond  # menarik microsecond untuk dihitung terpisah
 
     return int((calendar.timegm(time.timetuple()) * 1000000 + microsecs) / 1000)
 
 
+def get_now_unix_time() -> int:
+    """ """
+
+    now_utc = convert_time_to_utc()["utc_now"]
+
+    return int(convert_time_to_unix(now_utc))
+
 def time_delta_between_now_and_transaction_time_both_in_utc(
     transaction_time: str,
-) -> float:
+) -> dict:
     """Menghitung selisih  antara waktu saat ini dengan
     waktu saat transaksi
 
@@ -165,9 +166,13 @@ def time_delta_between_now_and_transaction_time_both_in_utc(
 
 
 def time_delta_between_two_times(
-    time_format, start_time: str, end_time: str = None
-) -> float:
-    """Menghitung selisih  antara waktu 2 waktu
+    time_format, 
+    start_time: str,
+    end_time: str = None,
+    ) -> float:
+    
+    """
+    Menghitung selisih  antara waktu 2 waktu
     time format: utc/unix
 
     """
@@ -219,8 +224,11 @@ def time_delta_between_two_times(
 
 
 def check_alarm_clock(
-    triggerHour, triggerMinute, isTrigger=False, local_time: str = None
-):
+    triggerHour, 
+    triggerMinute, 
+    isTrigger=False, 
+    local_time: str = None,
+    ):
     """
 
     Add an alarm clock to the trading strategy
@@ -262,7 +270,10 @@ def check_alarm_clock(
     return False
 
 
-def resampling_time_frame(ohlc_data: list, time_frame: str = "5min"):
+def resampling_time_frame(
+    ohlc_data: list, 
+    time_frame: str = "5min",
+    ):
     """
 
 
@@ -297,11 +308,3 @@ def resampling_time_frame(ohlc_data: list, time_frame: str = "5min"):
     df.resample(time_frame, closed="right", label="right").agg(d)
 
     return False
-
-
-def get_now_unix_time() -> int:
-    """ """
-
-    now_utc = convert_time_to_utc()["utc_now"]
-
-    return int(convert_time_to_unix(now_utc))

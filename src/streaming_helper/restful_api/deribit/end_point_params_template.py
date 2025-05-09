@@ -331,10 +331,12 @@ def simulate_portfolio_params(
 
     currency = str_mod.extract_currency_from_text(instrument_name)
 
+    instrument_name_text = f"{instrument_name}"
+
     return {
         "currency": currency,
         "add_positions": add_positions,
-        "simulated_positions": {f""" "{instrument_name}" """: {position}},
+        "simulated_positions": {instrument_name_text: position},
     }
 
 
@@ -421,7 +423,7 @@ class SendApiRequest:
                 add_positions,
             ),
         )
-
+        
         return portfolio_simulation["result"]
 
     async def get_cancel_order_byOrderId(

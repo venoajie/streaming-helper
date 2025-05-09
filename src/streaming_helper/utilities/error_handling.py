@@ -6,7 +6,7 @@ import traceback
 
 from loguru import logger as log
 
-from streaming_helper.utilities import string_modification as str_mod, template
+from streaming_helper.utilities import template
 
 
 def parse_error_message(
